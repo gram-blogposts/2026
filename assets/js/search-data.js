@@ -42,7 +42,7 @@ ninja.data = [{
               description: "",
               section: "Dropdown",
               handler: () => {
-                window.location.href = "https://gram-blogposts.github.io/";
+                window.location.href = "https://gram-blogposts.github.io/2024/";
               },
             },{id: "post-sample-blog-post",
         
