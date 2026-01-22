@@ -1,0 +1,2904 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>Graph Mamba Interactives</title><style>
+
+  /* ============================================
+     🎨 DESIGN SYSTEM: Colors & Typography
+     ============================================ */
+  :root {
+    /* === COLORS === */
+    /* Background */
+    --bg-primary: #faf9f7;
+    --bg-dark: #1a1d21;
+    --bg-card: #232629;
+    --bg-card-hover: #2d3136;
+
+    /* Text */
+    --text-primary: #2c2c2c;
+    --text-secondary: #5a5a5a;
+    --text-light: #e8e6e3;
+    --text-muted: #8b8b8b;
+    --text-bright: #d4d2cf;
+
+    /* Semantic Colors */
+    --color-node: #c45c3e;
+    --color-edge: #d4a754;
+    --color-relevant: #5a9a6e;
+    --color-noise: #c46b6b;
+    --color-forward: #5a7fb3;
+    --color-backward: #c4964a;
+    --color-combined: #8a6aad;
+    --color-highlight: #6b8fc4;
+
+    /* UI Elements */
+    --color-border: #3d4147;
+    --color-border-light: #545962;
+    --color-accent: #5a7fb3;
+    --color-success: #4a8a5a;
+    --color-warning: #c4a04a;
+
+    /* === TYPOGRAPHY === */
+    --font-serif: 'Lora', serif;
+    --font-sans: 'Roboto', sans-serif;
+    --font-mono: 'Roboto Mono', monospace;
+
+    /* Font Sizes */
+    --text-xs: 0.75rem;    /* 12px */
+    --text-sm: 0.875rem;   /* 14px */
+    --text-base: 1rem;     /* 16px */
+    --text-lg: 1.125rem;   /* 18px */
+    --text-xl: 1.25rem;    /* 20px */
+    --text-2xl: 1.5rem;    /* 24px */
+    --text-3xl: 1.875rem;  /* 30px */
+    --text-4xl: 2.25rem;   /* 36px */
+
+    /* === SPACING === */
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    --space-2xl: 3rem;
+
+    /* === SHADOWS === */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+    --shadow-glow-blue: 0 2px 8px rgba(90, 127, 179, 0.15);
+    --shadow-glow-purple: 0 2px 8px rgba(138, 106, 173, 0.15);
+  }
+
+  /* ============================================
+     🎯 BASE STYLES
+     ============================================ */
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-serif);
+    line-height: 1.6;
+    color: var(--text-primary);
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: var(--space-lg);
+    background-color: var(--bg-primary);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
+    margin-top: var(--space-2xl);
+    margin-bottom: var(--space-md);
+    color: #111;
+    font-weight: 700;
+  }
+
+  h1 {
+    font-size: var(--text-4xl);
+    text-align: center;
+    margin-bottom: var(--space-sm);
+  }
+
+  h2 {
+    font-size: var(--text-3xl);
+    margin-top: var(--space-2xl);
+  }
+
+  h3 {
+    font-size: var(--text-2xl);
+    margin-top: var(--space-xl);
+  }
+
+  h4 {
+    font-size: var(--text-xl);
+    margin-top: var(--space-lg);
+  }
+
+  a {
+    color: var(--color-accent);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  a:hover {
+    color: var(--color-highlight);
+    text-decoration: underline;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  em {
+    font-style: italic;
+    color: var(--text-secondary);
+  }
+
+  /* ============================================
+     📦 LAYOUT COMPONENTS
+     ============================================ */
+  .article-width {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-bottom: var(--space-2xl);
+    font-size: var(--text-lg);
+  }
+
+  /* ============================================
+     🎨 INTERACTIVE FIGURES
+     ============================================ */
+  .interactive-figure {
+    position: relative;
+    width: 120%;
+    margin-left: -10%;
+    background: var(--bg-dark);
+    border-radius: 12px;
+    margin-top: var(--space-xl);
+    margin-bottom: var(--space-xl);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .interactive-figure.if--500 { min-height: 500px; }
+  .interactive-figure.if--600 { min-height: 600px; }
+
+  .figure-caption {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    text-align: center;
+    margin-top: var(--space-sm);
+    font-family: var(--font-sans);
+  }
+
+  /* ============================================
+     🎛️ CONTROLS & OVERLAYS
+     ============================================ */
+  .viz-controls {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: var(--space-md);
+    border-radius: 8px;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    z-index: 10;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* ============================================
+     📝 CODE & FORMULAS
+     ============================================ */
+  pre {
+    background: #f4f4f4;
+    padding: var(--space-lg);
+    border-radius: 8px;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    overflow-x: auto;
+    border-left: 4px solid var(--color-accent);
+    line-height: 1.6;
+  }
+
+  code {
+    font-family: var(--font-mono);
+    background: rgba(59, 130, 246, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+
+  .formula-box {
+    background: rgba(226, 227, 233, 0.9);
+    padding: var(--space-lg);
+    border-radius: 10px;
+    margin: var(--space-lg) 0;
+    font-family: var(--font-mono);
+    color: #000;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* ============================================
+     💡 INFO BOXES
+     ============================================ */
+  .info-box {
+    background: rgba(90, 127, 179, 0.08);
+    padding: var(--space-lg);
+    border-radius: 12px;
+    margin: var(--space-lg) 0;
+    border-left: 4px solid var(--color-accent);
+    border: 1px solid rgba(90, 127, 179, 0.2);
+  }
+
+  .info-box h4 {
+    color: var(--color-highlight);
+    margin-top: 0;
+    font-size: var(--text-lg);
+  }
+
+  .info-box p {
+    color: var(--text-primary);
+    line-height: 1.7;
+    margin-bottom: var(--space-sm);
+  }
+
+  .warning-box {
+    background: rgba(251, 191, 36, 0.1);
+    border-left: 4px solid var(--color-warning);
+    padding: var(--space-lg);
+    border-radius: 8px;
+    margin: var(--space-lg) 0;
+  }
+
+  .success-box {
+    background: rgba(74, 222, 128, 0.1);
+    border-left: 4px solid var(--color-relevant);
+    padding: var(--space-lg);
+    border-radius: 8px;
+    margin: var(--space-lg) 0;
+  }
+
+  /* ============================================
+     🔘 BUTTONS
+     ============================================ */
+  .btn-primary {
+    background: var(--color-accent);
+    border: none;
+    color: white;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: var(--text-sm);
+    cursor: pointer;
+    box-shadow: var(--shadow-glow-blue);
+    transition: all 0.2s;
+    font-family: var(--font-sans);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(90, 127, 179, 0.2);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  /* ============================================
+     📊 TABLES
+     ============================================ */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+    margin: var(--space-lg) 0;
+    font-family: var(--font-sans);
+  }
+
+  .data-table thead tr {
+    background: var(--bg-card);
+    color: var(--text-light);
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 12px 16px;
+    border: 1px solid var(--color-border);
+    text-align: left;
+  }
+
+  .data-table th {
+    font-weight: 600;
+  }
+
+  .data-table--light thead tr {
+    background: #f4f4f4;
+    color: #111;
+  }
+
+  .data-table--light th,
+  .data-table--light td {
+    border-color: #e2e8f0;
+  }
+
+  /* ============================================
+     🎯 VISUALIZATION STYLES (Unified)
+     ============================================ */
+  .gmv-root, #walk-viz, #mamba-viz, #bidirectional-mamba-viz {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 12px 14px;
+    box-sizing: border-box;
+    color: var(--text-bright);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    background: var(--bg-dark);
+    border-radius: 10px;
+    border: 1px solid var(--color-border);
+  }
+
+  .gmv-wrapper {
+    display: grid;
+    grid-template-columns: minmax(260px, 0.45fr) minmax(320px, 0.55fr);
+    gap: var(--space-md);
+    height: 100%;
+  }
+
+  .gmv-panel {
+    background: var(--bg-dark);
+    border-radius: 10px;
+    border: 1px solid var(--color-border);
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    min-height: 600px;           /* ← ДОБАВЬТЕ: фиксируем высоту панели */
+    max-height: 740px;           /* ← ДОБАВЬТЕ: фиксируем высоту панели */
+    overflow: hidden;            /* ← ДОБАВЬТЕ: прячем переполнение */
+  }
+
+  .gmv-title {
+    font-weight: 600;
+    font-size: var(--text-sm);
+    letter-spacing: 0.02em;
+    color: var(--text-light);
+  }
+
+  .gmv-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+
+  .gmv-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .gmv-legend span:before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .gmv-step-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .gmv-step-buttons button {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(148, 163, 184, 0.7);
+    background: rgba(15, 23, 42, 0.9);
+    color: var(--text-bright);
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s;
+    font-family: var(--font-sans);
+  }
+
+  .gmv-step-buttons button:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--color-accent);
+  }
+
+  .gmv-step-buttons button.active {
+    background: var(--color-accent);
+    border-color: #1d4ed8;
+    font-weight: 600;
+  }
+  
+  /* Контейнер для шага - ФИКСИРОВАННАЯ ВЫСОТА */
+  .gmv-step-card {
+    min-height: 600px;           /* ← Ключевое: фиксируем минимальную высоту */
+    max-height: 600px;           /* ← Ключевое: фиксируем максимальную высоту */
+    overflow-y: auto;            /* Скролл если контент больше */
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-sm);
+  }
+
+  /* Контейнер для матриц/векторов - центрирование */
+  .gmv-grid {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;                     /* Занимает оставшееся пространство */
+    min-height: 250px;           /* Минимальная высота для матриц */
+    margin: var(--space-md) 0;
+  }
+
+
+  .gmv-formula {
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    background: rgba(15, 23, 42, 0.8);
+    border-radius: 8px;
+    padding: var(--space-md);
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    box-shadow: var(--shadow-sm);
+    font-family: var(--font-mono);
+  }
+
+  .gmv-explain {
+    font-size: 10px;
+    color: #64748b;              /* Серый, менее заметный */
+    line-height: 1.5;
+    margin: var(--space-sm) 0;
+    padding: 0 var(--space-sm);
+    opacity: 0.7;                /* Полупрозрачный */
+    font-family: var(--font-sans);
+  }
+
+  /* Заголовки шагов */
+  .gmv-step-title {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--text-light);
+    margin-bottom: var(--space-sm);
+    font-family: var(--font-sans);
+  }
+
+  /* Информация о размерах */
+  .gmv-shape-note {
+    font-size: 11px;
+    color: #94a3b8;
+    margin: var(--space-sm) 0;
+    padding: var(--space-xs) var(--space-sm);
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 4px;
+  }
+
+
+  .gmv-hover-detail {
+    font-size: 11px;
+    color: #a5b4fc;
+    min-height: 40px;
+    border-top: 1px solid rgba(148, 163, 184, 0.5);
+    margin-top: var(--space-sm);
+    padding-top: 6px;
+  }
+
+  .gmv-grid svg {
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* ============================================
+     🎨 UTILITY CLASSES
+     ============================================ */
+  .highlight-word {
+    background-color: rgba(251, 191, 36, 0.3);
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+
+  .dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: var(--space-md);
+    vertical-align: middle;
+  }
+
+  .dot--green {
+    background: var(--color-relevant);
+    box-shadow: 0 0 4px rgba(90, 154, 110, 0.25);
+  }
+
+  .dot--red {
+    background: var(--color-noise);
+    box-shadow: 0 0 4px rgba(196, 107, 107, 0.25);
+  }
+
+  .dot--blue {
+    background: var(--color-forward);
+    box-shadow: 0 0 4px rgba(90, 127, 179, 0.25);
+  }
+
+  .dot--yellow {
+    background: var(--color-edge);
+    box-shadow: 0 0 4px rgba(212, 167, 84, 0.25);
+  }
+
+
+  /* ============================================
+     📚 NAVIGATION & STRUCTURE
+     ============================================ */
+  .table-of-contents {
+    background: var(--bg-card);
+    border-left: 4px solid var(--color-accent);
+    padding: var(--space-lg);
+    margin: var(--space-2xl) 0;
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .table-of-contents h3 {
+    color: var(--text-light);
+    margin-top: 0;
+    font-size: var(--text-xl);
+    margin-bottom: var(--space-md);
+  }
+
+  .table-of-contents ol {
+    margin: 0;
+    padding-left: var(--space-xl);
+    color: var(--text-bright);
+  }
+
+  .table-of-contents li {
+    margin: var(--space-sm) 0;
+    line-height: 1.8;
+  }
+
+  .table-of-contents a {
+    color: var(--color-highlight);
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .table-of-contents a:hover {
+    color: var(--text-light);
+    padding-left: var(--space-xs);
+  }
+
+  .intro-section {
+    background: rgba(90, 127, 179, 0.04);
+    padding: var(--space-xl) var(--space-lg);
+    margin: var(--space-2xl) 0;
+    border-radius: 12px;
+    border: 1px solid rgba(90, 127, 179, 0.12);
+  }
+
+  .intro-section p {
+    font-size: var(--text-lg);
+    line-height: 1.8;
+    color: var(--text-primary);
+  }
+
+  .key-takeaway {
+    background: rgba(74, 138, 90, 0.08);
+    border-left: 4px solid var(--color-success);
+    padding: var(--space-lg);
+    margin: var(--space-xl) 0;
+    border-radius: 8px;
+    font-size: var(--text-lg);
+  }
+
+  .key-takeaway strong {
+    color: var(--color-success);
+  }
+
+  .section-intro {
+    font-size: var(--text-lg);
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-bottom: var(--space-lg);
+    padding-left: var(--space-lg);
+    border-left: 3px solid var(--color-border-light);
+  }
+
+  .step-number {
+    display: inline-block;
+    background: var(--color-accent);
+    color: white;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 2rem;
+    margin-right: var(--space-sm);
+    font-weight: bold;
+  }
+
+  .comparison-section {
+    margin: var(--space-2xl) 0;
+    padding: var(--space-lg);
+    background: var(--bg-primary);
+    border-radius: 8px;
+  }
+
+    </style><script src="//unpkg.com/3d-force-graph"></script><script src="//unpkg.com/d3"></script></head><body><h2>Interactive Figures</h2><section style="width: 80%; margin: 0 auto;">
+<div class="interactive-figure if--600" id="cora-viz">
+<div class="viz-controls">
+<strong>Cora Citation Network</strong><br/>
+<span style="color:#666">Drag to rotate • Scroll to zoom</span><br/>
+<button onclick="resetCamera()">Reset View</button>
+<div style="margin-top:6px; color:#444; font-size:12px;">Ground truth topics</div>
+</div>
+</div>
+<div class="figure-caption">
+<strong>Figure 1:</strong> Ground-truth Cora citations (papers as nodes, edges as citations). Colors = true topics from the dataset.
+        </div>
+</section><section class="article-width" id="step1">
+<h2>From Random Walks to Tokens</h2>
+<p class="section-intro">
+            The first innovation in Graph Mamba is how we sample and represent graph neighborhoods. 
+            Instead of fixed-radius neighbors, we use random walks to create multi-scale "snapshots" of the graph.
+        </p>
+<p>
+            For each center node <em>v</em> we want a list of small neighbourhood snapshots, called <strong>tokens</strong>. 
+            We fix a maximum walk length <strong>m</strong>. For every length ℓ = 0, 1, …, m we launch <strong>M</strong> random walks 
+            starting from v and collect all nodes that are visited at least once. The union of these visited nodes forms a subgraph 
+            G[T<sub>ℓ</sub>(v)] – this subgraph is one token for length ℓ.
+        </p>
+<div class="info-box">
+<p><strong>Intuition:</strong> Imagine you're exploring a city</p>
+<ul>
+<li><strong>ℓ = 0:</strong> You stay at the starting point (just the center node)</li>
+<li><strong>ℓ = 1:</strong> You walk one block in random directions (immediate neighbors)</li>
+<li><strong>ℓ = 2:</strong> You walk two blocks (2-hop neighbors)</li>
+<li><strong>ℓ = m:</strong> You explore the entire neighborhood</li>
+</ul>
+<p>
+                Each "snapshot" at distance ℓ becomes a <strong>token</strong>. By processing tokens from different distances, 
+                the model learns which neighborhood scales matter most.
+            </p>
+</div>
+<p>
+            A local encoder ϕ(·) later turns each subgraph token into a d-dimensional vector. If we have one token per length ℓ, 
+            the resulting "token matrix" for node v has shape (m+1) × d. In the full GMN recipe this sampling can be repeated 
+            <strong>s</strong> times, giving K = (m+1)·s token vectors per node, which are then flattened into a K × d sequence 
+            for the Mamba block.
+        </p>
+<div class="interactive-figure">
+<div id="walk-viz" style="position:relative; width:100%; height:100%; min-height: 550px;">
+<!-- Controls (left) -->
+<div id="walk-controls" style="
+              position:absolute; 
+              top:10px; left:10px; 
+              background:rgba(15,23,42,0.9); 
+              color:#e5e7eb; 
+              padding:8px 10px; 
+              border-radius:6px; 
+              font-family:monospace; 
+              font-size:12px;
+              z-index:10;">
+<div style="margin-top:2px; margin-bottom:4px;"><strong>1. Number of walks M</strong></div>
+<input id="walk-count" max="8" min="1" step="1" style="width:160px;" type="range" value="4"/>
+<div>
+                M = <span id="walk-count-value">4</span> walks
+              </div>
+<div style="margin-top:4px;"><strong>2. Pick a center node</strong> (click any circle)</div>
+<div style="margin-top:6px; margin-bottom:4px;"><strong>3. Walk length ℓ</strong></div>
+<input id="walk-length" max="3" min="0" step="1" style="width:160px;" type="range" value="1"/>
+<div>
+                ℓ = <span id="walk-length-value">1</span> steps
+              </div>
+<button id="sample-token-btn" style="
+                margin-top:8px; 
+                width:100%; 
+                background:#2563eb; 
+                border:none; 
+                color:white; 
+                padding:4px 6px; 
+                border-radius:4px; 
+                cursor:pointer;">
+                Generate token
+              </button>
+</div>
+<!-- Token matrix (right) -->
+<div id="token-panel" style="
+              position:absolute; 
+              top:10px; right:10px; 
+              width:180px; 
+              background:rgba(15,23,42,0.9);
+              color:#e5e7eb;
+              padding:8px 10px;
+              border-radius:6px;
+              font-family:monospace;
+              font-size:12px;
+              z-index:10;">
+<div style="margin-bottom:4px;"><strong>Token matrix for this node</strong></div>
+<div style="font-size:10px; color:#9ca3af; margin-bottom:6px;">
+                In this demo we use the simple case s = 1:
+                each row corresponds to all M walks of one length ℓ, encoded as a d‑dimensional vector.
+                In the full GMN model the sampling is repeated s times and the (ℓ, j) pairs are flattened
+                into a K × d sequence for Mamba.
+              </div>
+<svg height="120" id="token-matrix" width="160"></svg>
+</div>
+<!-- Text output for the current token -->
+<div id="walk-sequence" style="
+              position:absolute;
+              bottom:10px; left:10px; right:10px;
+              background:rgba(15,23,42,0.9);
+              color:#a5b4fc;
+              padding:6px 8px;
+              border-radius:6px;
+              font-family:monospace;
+              font-size:12px;
+              z-index:10;">
+              Choose M, click a node and choose ℓ, then press “Generate token”.
+            </div>
+</div>
+</div>
+<div class="figure-caption">
+<strong>Figure:</strong> Each blue "cloud" is still a graph: it has several nodes, edges, and node features. 
+            To feed it into the sequence model, we compress this whole subgraph into a single vector.
+        </div>
+</section><section class="article-width" id="step2">
+<h2>Encoding Subgraphs with Local Encoders</h2>
+<p class="section-intro">
+            Now that we have tokens (subgraphs), we need to convert each one into a fixed-size vector. 
+            This is where the local encoder ϕ(·) comes in.
+        </p>
+<p>
+            Each blue "cloud" is still a graph: it has several nodes, edges, and node features. 
+            To feed it into the sequence model, we compress this whole subgraph into a single vector — 
+            a <strong>token embedding</strong> of size d.
+        </p>
+<p>
+            Graph Mamba Networks use a small <em>local encoder</em> ϕ(·) for this step. 
+            In practice ϕ(·) can be implemented in several ways:
+        </p>
+<ul>
+<li><strong>GCN (Graph Convolutional Network):</strong> 2-3 layers of graph convolutions</li>
+<li><strong>GraphSAGE:</strong> Sample and aggregate neighborhood features</li>
+<li><strong>GAT (Graph Attention):</strong> Learn attention weights between nodes</li>
+<li><strong>Simple pooling:</strong> Just average all node features (baseline)</li>
+</ul>
+<p>
+            Regardless of the chosen encoder, the output is always a d-dimensional vector 
+            ϕ(G[T<sub>ℓ</sub>(v)], X<sub>T<sub>ℓ</sub>(v)</sub>), which becomes one row in the K × d token matrix 
+            for node v. Later, the Bidirectional Mamba block will read this matrix as a sequence of tokens and learn 
+            which subgraphs are most informative.
+        </p>
+<h3>GCN Encoder: Three Phases</h3>
+<p>
+            So far we treated the local encoder ϕ(·) as a black box that turns a subgraph token G[T<sub>ℓ</sub>(v)] into a 
+            d-dimensional vector. Here we open this box for a simple 2-layer GCN encoder and look at the actual tensors that 
+            flow through the network for one token.
+        </p>
+<div class="info-box">
+<p><strong>GCN Processing Steps:</strong></p>
+<ol>
+<li><strong>Define the graph structure (A) and node features (X)</strong></li>
+<li><strong>Apply linear transform to the features, aggregate neighbors, apply ReLU</strong></li>
+<li><strong>Second layer of aggregation, then pool all nodes into one vector</strong></li>
+</ol>
+</div>
+<div class="interactive-figure" style="min-height:600px; background:#020617; border:1px solid #1f2937;">
+<div id="gcn-local-viz" style="position:relative; width:100%; height:750px;"></div>
+</div>
+<div class="figure-caption">
+<strong>Visualization:</strong> This shows how a 2-layer GCN local encoder ϕ(·) processes a single token subgraph. 
+            On the left you see the token subgraph around a node v. On the right you can inspect, step by step, 
+            the tensors A, X, X1, AX1, H1, X2, AX2, H2, and the pooled vector z that becomes the token embedding.
+        </div>
+</section><section class="article-width" id="step3">
+<h2>The Mamba Block: Selective State Spaces</h2>
+<p class="section-intro">
+            After encoding subgraphs into tokens, we need a way to process these token sequences efficiently. 
+            This is where Mamba shines — offering linear complexity instead of quadratic attention.
+        </p>
+<h3>From Tokens to Sequences</h3>
+<p>
+            After the local encoder processes each subgraph, every node <em>v</em> has <strong>K token vectors</strong> of dimension <em>d</em>. 
+            These K vectors are stacked into a matrix of shape <strong>K × d</strong>, where:
+        </p>
+<ul>
+<li>K = (m+1) × s = (walk lengths × number of samples)</li>
+<li>d = embedding dimension</li>
+</ul>
+<p>
+            This K × d matrix is the <em>sequence</em> that Mamba processes. Each row is one token, 
+            representing a subgraph at a certain walk length.
+        </p>
+<h3>Token Ordering</h3>
+<p>
+            Unlike Transformers, which are permutation-equivariant (they don't care about token order), 
+            Mamba is a <strong>sequential encoder</strong> — it processes tokens one by one, 
+            and earlier tokens influence later ones through the hidden state. 
+            This means the <em>order of tokens matters</em>.
+        </p>
+<div class="info-box">
+<h4>How are tokens ordered?</h4>
+<p>
+<strong>When m ≥ 1 (subgraph tokenization):</strong> tokens have an <em>implicit hierarchical order</em>. 
+                The i-th token (i-hop neighborhood) is a subgraph of all j-hop neighborhoods where j ≥ i. 
+                GMN uses <strong>reverse order</strong>: from outer neighborhoods (m-hop) to inner ones (1-hop, then 0-hop = node itself).
+            </p>
+<p style="margin-top: 12px;">
+                This way, when the model reaches the node's own embedding (last token), it already has context 
+                about the entire neighborhood structure — from global to local.
+            </p>
+<p style="margin-top: 12px;">
+<strong>When s ≥ 2:</strong> tokens with the same walk length ℓ are <em>randomly shuffled</em> among themselves 
+                to make the model robust to their permutation.
+            </p>
+<p style="margin-top: 12px;">
+<strong>When m = 0 (node tokenization):</strong> there's no implicit order, so nodes are sorted by 
+                structural properties like <em>Personalized PageRank</em> or <em>degree</em>. 
+                Domain knowledge can also be used when available.
+            </p>
+</div>
+<p>
+    The final token sequence for a node v looks like this (processed in this exact order):
+</p>
+<div class="formula-box" style="font-size: 0.9em; line-height: 2;">
+<strong style="color: var(--color-highlight);">Step 1:</strong> x<sup>s</sup><sub>v,m</sub> — s tokens from <em>m-hop</em> neighborhoods (farthest)<br/>
+<strong style="color: var(--color-highlight);">Step 2:</strong> x<sup>s</sup><sub>v,m-1</sub> — s tokens from <em>(m-1)-hop</em> neighborhoods<br/>
+<span style="margin-left: 40px;">...</span><br/>
+<strong style="color: var(--color-highlight);">Step m:</strong> x<sup>s</sup><sub>v,1</sub> — s tokens from <em>1-hop</em> neighborhoods (direct neighbors)<br/>
+<strong style="color: var(--color-highlight);">Final:</strong> x<sup>s</sup><sub>v,0</sub> — s tokens from <em>0-hop</em> (node v itself)
+      <ul style="padding-left: 1.5rem; line-height: 1.8;color: var(--text-muted);font-size: 0.85em; margin-top: 0.7rem; margin-bottom: 0.2rem;">
+<li><strong>x<sup>s</sup><sub>v,ℓ</sub></strong> = <em>s</em> token vectors for node <em>v</em> at walk length <em>ℓ</em></li>
+<li>Within each group of <em>s</em> tokens at the same <em>ℓ</em>, order is <strong>randomly shuffled</strong></li>
+</ul>
+</div>
+<h3>Why Mamba?</h3>
+<p>
+            Traditional Transformers use <strong>self-attention</strong> with \(O(N^2)\) complexity, 
+            where every token attends to every other token. For long sequences (like graph random walks), 
+            this becomes computationally expensive and memory-intensive.
+        </p>
+<p>
+<strong>Mamba</strong> offers a different approach: a <strong>Selective State Space Model (SSM)</strong> 
+            with \(O(N)\) complexity. Instead of attention, Mamba maintains a <em>hidden state</em> that evolves 
+            recurrently as it processes each token.
+        </p>
+<div class="comparison-section">
+<table style="width: 100%; border-collapse: collapse;">
+<thead>
+<tr style="background: var(--bg-card); color: var(--text-light);">
+<th style="padding: var(--space-md); text-align: left; border: 1px solid var(--color-border);">Property</th>
+<th style="padding: var(--space-md); text-align: left; border: 1px solid var(--color-border);">Transformer</th>
+<th style="padding: var(--space-md); text-align: left; border: 1px solid var(--color-border);">Mamba</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="padding: var(--space-md); border: 1px solid var(--color-border);"><strong>Complexity</strong></td>
+<td style="padding: var(--space-md); border: 1px solid var(--color-border);">\(O(N^2)\)</td>
+<td style="padding: var(--space-md); border: 1px solid var(--color-border); background: rgba(74, 222, 128, 0.1);">\(O(N)\)</td>
+</tr>
+<tr>
+<td style="padding: var(--space-md); border: 1px solid var(--color-border);"><strong>Memory Usage</strong></td>
+<td style="padding: var(--space-md); border: 1px solid var(--color-border);">High (stores attention matrix)</td>
+<td style="padding: var(--space-md); border: 1px solid var(--color-border); background: rgba(74, 222, 128, 0.1);">Low (only hidden state)</td>
+</tr>
+<tr>
+<td style="padding: var(--space-md); border: 1px solid var(--color-border);"><strong>Long Sequences</strong></td>
+<td style="padding: var(--space-md); border: 1px solid var(--color-border);">Struggles</td>
+<td style="padding: var(--space-md); border: 1px solid var(--color-border); background: rgba(74, 222, 128, 0.1);">Efficient</td>
+</tr>
+<tr>
+<td style="padding: var(--space-md); border: 1px solid var(--color-border);"><strong>Selective Filtering</strong></td>
+<td style="padding: var(--space-md); border: 1px solid var(--color-border);">No</td>
+<td style="padding: var(--space-md); border: 1px solid var(--color-border); background: rgba(74, 222, 128, 0.1);">Yes (Delta)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3>The Core Mechanism</h3>
+<p>
+            As you read through tokens (subgraphs at different distances), Mamba maintains a 
+            <strong>running summary</strong> called the "hidden state":
+        </p>
+<div class="formula-box">
+<p>The Mamba block updates its hidden state using this equation:</p>
+<p style="text-align: center; font-size: var(--text-xl); margin: var(--space-lg) 0;">
+                \[ h_t = \bar{A} h_{t-1} + \bar{B} x_t \]
+            </p>
+<p><strong>Where:</strong></p>
+<ul>
+<li>\(h_t\) = hidden state at step t</li>
+<li>\(x_t\) = current input token</li>
+<li>\(\bar{A}\) = state transition matrix (how much to remember)</li>
+<li>\(\bar{B}\) = input projection matrix (how much new info to add)</li>
+</ul>
+</div>
+<h3>The Selective Mechanism</h3>
+<p>
+            This is similar to an RNN, but in standard state space models, <strong>A and B are fixed parameters</strong> — 
+            they don't change based on the input.
+        </p>
+<p>
+            Here's the key innovation: <strong>Mamba makes A and B input-dependent</strong> through a gating parameter 
+            <strong>\(\Delta_t\)</strong> (delta).
+        </p>
+<p>
+            For each token \(x_t\), the model computes:
+        </p>
+<div class="formula-box">
+<p style="text-align: center; font-size: var(--text-lg); margin: var(--space-md) 0;">
+                \[ \Delta_t = \text{Softplus}(W_\Delta x_t) \]
+            </p>
+<p>Then it modulates the fixed A and computes effective parameters:</p>
+<p style="text-align: center; font-size: var(--text-lg); margin: var(--space-md) 0;">
+                \[ \bar{A} = \exp(\Delta_t \cdot A), \quad \bar{B} = \Delta_t \cdot B \]
+            </p>
+</div>
+<p>
+            This allows the model to:
+        </p>
+<ul>
+<li><strong>Expand the gate (Δ large):</strong> Let important tokens influence the hidden state strongly</li>
+<li><strong>Contract the gate (Δ small):</strong> Filter out noisy or irrelevant tokens</li>
+</ul>
+<div class="key-takeaway">
+<strong>Key Innovation:</strong> The selective gate Δ decides how much to update the summary based on 
+            the current token's importance. This enables Mamba to focus on relevant information while filtering noise.
+        </div>
+<div class="interactive-figure" style="background:#020617; border:1px solid #1f2937; position: relative; height: 500px;">
+<div id="mamba-viz" style="width: 100%; height: 100%; position: relative;"></div>
+<!-- Improved Legend/Controls -->
+<div style="position: absolute; bottom: 15px; right: 15px; background: rgba(15,23,42,0.95); padding: 15px; border-radius: 8px; font-size: 12px; color: #cbd5e1; font-family: 'Roboto', sans-serif; border: 1px solid #334155; min-width: 240px; width: 240px;">
+<div style="font-weight: 600; margin-bottom: 10px; color: #e2e8f0; font-size: 13px;">Legend</div>
+<div style="display:flex; align-items:center; margin-bottom:6px;">
+<span style="width:12px; height:12px; background:#4ade80; border-radius:50%; display:inline-block; margin-right:10px; box-shadow: 0 0 8px rgba(74,222,128,0.5);"></span>
+<span>Relevant (Gate Open)</span>
+</div>
+<div style="display:flex; align-items:center; margin-bottom:12px;">
+<span style="width:12px; height:12px; background:#f87171; border-radius:50%; display:inline-block; margin-right:10px; box-shadow: 0 0 8px rgba(248,113,113,0.5);"></span>
+<span>Noise (Gate Closed)</span>
+</div>
+<div style="border-top:1px solid #475569; padding-top:10px; margin-top:8px;">
+<button id="replay-btn" style="width: 100%; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border:none; color:white; padding:8px 12px; cursor:pointer; border-radius:6px; font-weight: 500; font-size: 12px; box-shadow: 0 2px 8px rgba(59,130,246,0.3); transition: all 0.2s;">
+                        ▶ Replay Animation
+                    </button>
+<div id="step-info" style="margin-top: 10px; padding: 8px; background: rgba(30,41,59,0.8); border-radius: 4px; font-size: 11px; min-height: 40px; color: #94a3b8;"></div>
+</div>
+</div>
+</div>
+<div class="figure-caption">
+<strong>Interactive Demo:</strong> Watch how Mamba processes a sequence of tokens. The <strong>gate</strong> 
+            opens (expands) for relevant tokens and closes (contracts) for noise. The <strong>hidden state</strong> 
+            accumulates information only from relevant tokens.
+        </div>
+</section><section class="article-width" id="step4">
+<h2>Bidirectional Processing</h2>
+<p class="section-intro">
+            Random walks have no inherent direction like sentences. Processing them only left-to-right would introduce bias. 
+            Graph Mamba solves this with bidirectional processing at two levels.
+        </p>
+<h3>Why Bidirectional?</h3>
+<p>
+            A random walk has no inherent "direction" like a sentence. If we only process it left-to-right, we bias the model.
+        </p>
+<p>
+            To fix this, we implement <strong>Bidirectional Mamba</strong>. Watch how two SSM blocks process the same sequence in 
+            <strong>opposite directions</strong>, then combine their outputs. This ensures each token "sees" context from both sides.
+        </p>
+<!-- Визуализация Bidirectional Mamba -->
+<div class="interactive-figure" style="min-height:400px">
+<div id="bidirectional-mamba-viz" style="position:relative; width:100%; min-height:500px"></div>
+<!-- Легенда + Кнопка -->
+<div style="position: absolute; bottom: 15px; right: 15px; background: rgba(15,23,42,0.95); padding: 15px; border-radius: 8px; font-size: 12px; color: #cbd5e1; font-family: Roboto, sans-serif; border: 1px solid #334155; min-width: 200px;">
+<div style="font-weight: 600; margin-bottom: 10px; color: #e2e8f0; font-size: 13px;">Bidirectional Processing</div>
+<div style="border-top:1px solid #475569; padding-top:10px; margin-top:8px">
+<button id="bidir-replay-btn" style="
+              width: 100%;
+              background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+              border: none;
+              color: white;
+              padding: 8px 12px;
+              cursor: pointer;
+              border-radius: 6px;
+              font-weight: 500;
+              font-size: 12px;
+              box-shadow: 0 2px 8px rgba(59,130,246,0.3);
+              transition: all 0.2s;
+            ">
+              ▶ Replay Animation
+            </button>
+</div>
+</div>
+</div>
+<div class="figure-caption">
+<strong>Figure:</strong> Bidirectional Mamba processes the same token sequence 
+            in both directions (forward and backward), then sums the outputs.
+          </div>
+<div class="formula-box" style="background: rgba(226, 227, 233, 0.8); padding: 20px; border-radius: 10px; margin: 20px 0; text-align: center;">
+<div style="font-size: 18px; line-height: 2.2; font-family: 'Computer Modern', serif; color: #1e293b;">
+<strong>h<sub>bidir</sub></strong> = 
+          <span style="color: #3b82f6; font-weight: 600;">h<sub>→</sub></span> + 
+          <span style="color: #f59e0b; font-weight: 600;">h<sub>←</sub></span>
+</div>
+<div style="margin-top: 15px; font-size: 13px; color: #64748b; font-family: 'Roboto', sans-serif;">
+          Forward and backward hidden states are summed element-wise
+        </div>
+</div>
+<h3>Two-Level Processing in Graph Mamba</h3>
+<div class="info-box">
+<p><strong>Level 1: Token-Level Bidirectional Mamba</strong></p>
+<p>
+                For each node <em>v</em>, we have K tokens (different-radius subgraphs). Bidirectional Mamba processes these K tokens 
+                to produce one <em>aggregated embedding</em> for node <em>v</em>.
+            </p>
+<p>
+                This lets the model decide which subgraphs are most important for this specific node.
+            </p>
+</div>
+<div class="info-box">
+<p><strong>Level 2: Node-Level Bidirectional Mamba</strong></p>
+<p>
+                After all nodes have their aggregated embeddings, we treat <em>all N nodes</em> as one long sequence and run 
+                bidirectional Mamba again.
+            </p>
+<p>
+                This enables nodes to "see" each other at long distances <strong>without</strong> quadratic attention complexity — 
+                it's like multi-hop message passing, but through Mamba instead of GNN layers.
+            </p>
+</div>
+<div class="key-takeaway">
+<strong>Why Two Levels?</strong> The first level learns which neighborhood scales matter. 
+            The second level enables long-range communication between distant nodes — all in linear time.
+        </div>
+</section><section style="width: 80%; margin: 0 auto;">
+<h3 class="article-width">Classified Cora Graph (Graph Mamba)</h3>
+<div class="interactive-figure if--600" id="cora-classified-viz">
+<div class="viz-controls">
+<strong>Predicted classes</strong><br/>
+<span style="color:#666;">Drag to rotate • Scroll to zoom</span>
+<div id="cora-classified-status" style="margin-top:6px; color:#444; font-size:12px;">Loading cora_visualization.json…</div>
+</div>
+</div>
+<div class="figure-caption">
+<strong>Figure:</strong> Model predictions on Cora after training (Graph Mamba best checkpoint). Colors = predicted topics.
+        </div>
+</section><script>
+    (function() {
+      const container = document.getElementById('cora-classified-viz');
+      const statusEl = document.getElementById('cora-classified-status');
+      if (!container || !statusEl || typeof ForceGraph3D !== 'function') return;
+
+      fetch('./data/cora_visualization_pred.json')
+        .then(resp => {
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          return resp.json();
+        })
+        .then(payload => {
+          const nodes = payload.nodes || [];
+          const links = payload.links || [];
+
+          const graph = ForceGraph3D()(container)
+            .width(container.clientWidth)
+            .height(container.clientHeight)
+            .graphData({ nodes, links })
+            .nodeRelSize(4)
+            .nodeVal(node => node.val || 2)
+            .nodeColor(node => coraPalette[node.labelIdx % coraPalette.length])
+            .nodeLabel(node => `Paper ${node.id}<br>${node.label || ''}`)
+            .linkWidth(0.5)
+            .linkOpacity(0.35)
+            .backgroundColor('#0b1120')
+            .onEngineStop(() => statusEl.textContent = `Loaded ${nodes.length} nodes / ${links.length} edges`);
+
+          window.addEventListener('resize', () => {
+            graph.width(container.clientWidth);
+            graph.height(container.clientHeight);
+          });
+        })
+        .catch(err => {
+          statusEl.textContent = `Failed to load cora_visualization_pred.json: ${err.message}`;
+        });
+    })();
+    </script><script>
+window.GCN_LOCAL_PAYLOAD = {
+  "nodeId": 0,
+  "graph": {
+    "nodes": [
+      {"id": 0, "x": 0.0, "y": 0.0, "distance": 0, "is_center": true, "degree": 3},
+      {"id": 1, "x": -0.8, "y": 0.5, "distance": 1, "is_center": false, "degree": 3},
+      {"id": 2, "x": 0.8, "y": 0.5, "distance": 1, "is_center": false, "degree": 3},
+      {"id": 3, "x": -1.2, "y": -0.3, "distance": 2, "is_center": false, "degree": 2},
+      {"id": 4, "x": 1.2, "y": -0.3, "distance": 2, "is_center": false, "degree": 2},
+      {"id": 5, "x": 0.0, "y": -0.8, "distance": 1, "is_center": false, "degree": 1}
+    ],
+    "links": [
+      {"source": 0, "target": 1},
+      {"source": 0, "target": 2},
+      {"source": 0, "target": 5},
+      {"source": 1, "target": 2},
+      {"source": 1, "target": 3},
+      {"source": 2, "target": 4},
+      {"source": 3, "target": 4}
+    ]
+  },
+  "layers": [
+    {
+      "walkLength": 2,
+      "tokenNodes": [0, 1, 2, 3, 4, 5],
+      "shapeInfo": {"k": 6, "featureDim": 3, "hiddenDim": 3},
+      "steps": [
+        {
+          "id": "adjacency",
+          "title": "Adjacency A",
+          "type": "matrix",
+          "matrix": {
+            "rows": ["0", "1", "2", "3", "4", "5"],
+            "cols": ["0", "1", "2", "3", "4", "5"],
+            "values": [
+              [0, 1, 1, 0, 0, 1],
+              [1, 0, 1, 1, 0, 0],
+              [1, 1, 0, 0, 1, 0],
+              [0, 1, 0, 0, 1, 0],
+              [0, 0, 1, 1, 0, 0],
+              [1, 0, 0, 0, 0, 0]
+            ]
+          },
+          "explain": "The adjacency matrix shows which nodes in the token are directly connected.",
+          "formula": {
+            "lhs": "A[i,j]",
+            "rhs": "1 if nodes i and j share an edge, else 0"
+          }
+        },
+        {
+          "id": "input_features",
+          "title": "Input features X",
+          "type": "matrix",
+          "matrix": {
+            "rows": ["0", "1", "2", "3", "4", "5"],
+            "cols": ["f0", "f1", "f2"],
+            "values": [
+              [0.22, -0.06, 0.29],
+              [0.46, -0.07, -0.07],
+              [0.47, 0.23, -0.14],
+              [0.16, -0.14, -0.14],
+              [0.07, -0.57, -0.52],
+              [-0.17, -0.3, 0.09]
+            ]
+          },
+          "explain": "Each row is a node, each column a feature. These are the raw node features before any GCN processing.",
+          "formula": {
+            "lhs": "X[i,f]",
+            "rhs": "raw feature value of node i in dimension f"
+          }
+        },
+        {
+          "id": "x1",
+          "title": "X1 = X·W1ᵀ",
+          "type": "matrix",
+          "matrix": {
+            "rows": ["0", "1", "2", "3", "4", "5"],
+            "cols": ["h0", "h1", "h2"],
+            "values": [
+              [0.03, 0.25, 0.02],
+              [0.22, 0.17, -0.14],
+              [0.33, 0.05, -0.04],
+              [0.07, 0.04, -0.13],
+              [-0.03, -0.06, -0.4],
+              [-0.19, 0.07, -0.06]
+            ]
+          },
+          "explain": "The first linear layer mixes input features into hidden dimensions h0, h1, h2.",
+          "formula": {
+            "lhs": "X1[i,h]",
+            "rhs": "Σ_f X[i,f]·W1[h,f]"
+          }
+        },
+        {
+          "id": "ax1",
+          "title": "AX1 = A·X1",
+          "type": "matrix",
+          "matrix": {
+            "rows": ["0", "1", "2", "3", "4", "5"],
+            "cols": ["h0", "h1", "h2"],
+            "values": [
+              [0.36, 0.29, -0.24],
+              [0.44, 0.34, -0.16],
+              [0.22, 0.37, -0.52],
+              [0.19, 0.11, -0.54],
+              [0.4, 0.09, -0.17],
+              [0.03, 0.25, 0.02]
+            ]
+          },
+          "explain": "Each node sums hidden messages X1[j] from its neighbors according to A.",
+          "formula": {
+            "lhs": "AX1[i,h]",
+            "rhs": "Σ_j A[i,j]·X1[j,h]"
+          }
+        },
+        {
+          "id": "h1",
+          "title": "H1 = ReLU(AX1)",
+          "type": "matrix",
+          "matrix": {
+            "rows": ["0", "1", "2", "3", "4", "5"],
+            "cols": ["h0", "h1", "h2"],
+            "values": [
+              [0.36, 0.29, 0.0],
+              [0.44, 0.34, 0.0],
+              [0.22, 0.37, 0.0],
+              [0.19, 0.11, 0.0],
+              [0.4, 0.09, 0.0],
+              [0.03, 0.25, 0.02]
+            ]
+          },
+          "explain": "ReLU keeps positive responses and sets negative ones to zero, focusing on strongly activated patterns.",
+          "formula": {
+            "lhs": "H1[i,h]",
+            "rhs": "max(0, AX1[i,h])"
+          }
+        },
+        {
+          "id": "x2",
+          "title": "X2 = H1·W2ᵀ",
+          "type": "matrix",
+          "matrix": {
+            "rows": ["0", "1", "2", "3", "4", "5"],
+            "cols": ["h0", "h1"],
+            "values": [
+              [0.13, 0.0],
+              [0.16, -0.0],
+              [0.02, 0.09],
+              [0.08, -0.02],
+              [0.21, -0.12],
+              [-0.05, 0.12]
+            ]
+          },
+          "explain": "The second linear layer refines hidden states based on H1.",
+          "formula": {
+            "lhs": "X2[i,h]",
+            "rhs": "Σ_f H1[i,f]·W2[h,f]"
+          }
+        },
+        {
+          "id": "ax2",
+          "title": "AX2 = A·X2",
+          "type": "matrix",
+          "matrix": {
+            "rows": ["0", "1", "2", "3", "4", "5"],
+            "cols": ["h0", "h1"],
+            "values": [
+              [0.14, 0.21],
+              [0.23, 0.07],
+              [0.5, -0.12],
+              [0.37, -0.12],
+              [0.1, 0.07],
+              [0.13, 0.0]
+            ]
+          },
+          "explain": "Second-hop aggregation spreads information from distant nodes back through the graph.",
+          "formula": {
+            "lhs": "AX2[i,h]",
+            "rhs": "Σ_j A[i,j]·X2[j,h]"
+          }
+        },
+        {
+          "id": "h2",
+          "title": "H2 = ReLU(AX2)",
+          "type": "matrix",
+          "matrix": {
+            "rows": ["0", "1", "2", "3", "4", "5"],
+            "cols": ["h0", "h1"],
+            "values": [
+              [0.14, 0.21],
+              [0.23, 0.07],
+              [0.5, 0.0],
+              [0.37, 0.0],
+              [0.1, 0.07],
+              [0.13, 0.0]
+            ]
+          },
+          "explain": "The final hidden activations for all nodes in the token.",
+          "formula": {
+            "lhs": "H2[i,h]",
+            "rhs": "max(0, AX2[i,h])"
+          }
+        },
+        {
+          "id": "z",
+          "title": "z = mean(H2)",
+          "type": "vector",
+          "vector": {
+            "labels": ["h0", "h1"],
+            "values": [0.247, 0.059]
+          },
+          "explain": "Pooling over all k=6 nodes yields one summary vector z for this token.",
+          "formula": {
+            "lhs": "z[h]",
+            "rhs": "1/k · Σ_i H2[i,h] with k=6"
+          }
+        }
+      ]
+    }
+  ]
+};
+
+
+
+
+(function() {
+  const container = document.getElementById('walk-viz');
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  const svg = d3.select("#walk-viz").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  // Игрушечный граф
+  const nodes = d3.range(8).map(i => ({ id: i }));
+  const links = [
+    {source: 0, target: 1}, {source: 0, target: 2},
+    {source: 1, target: 3}, {source: 1, target: 4},
+    {source: 2, target: 5}, {source: 2, target: 3},
+    {source: 3, target: 6}, {source: 4, target: 7},
+    {source: 5, target: 6}, {source: 6, target: 7}
+  ];
+
+  const simulation = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(links).id(d => d.id).distance(70))
+    .force("charge", d3.forceManyBody().strength(-400))
+    .force("center", d3.forceCenter(width * 0.45, height / 2));
+
+  const link = svg.append("g")
+    .attr("stroke", "#374151")
+    .attr("stroke-width", 2)
+    .selectAll("line")
+    .data(links)
+    .enter().append("line")
+    .attr("class", "graph-link");
+
+  const nodeGroup = svg.append("g")
+    .selectAll("g")
+    .data(nodes)
+    .enter().append("g")
+    .call(d3.drag()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended)
+    );
+
+  nodeGroup.append("circle")
+    .attr("r", 18)
+    .attr("fill", "#020617")
+    .attr("stroke", "#9ca3af")
+    .attr("stroke-width", 2)
+    .attr("class", "graph-node")
+    .attr("id", d => "node-" + d.id);
+
+  nodeGroup.append("text")
+    .text(d => d.id)
+    .attr("text-anchor", "middle")
+    .attr("dy", ".35em")
+    .attr("fill", "#e5e7eb")
+    .style("font-family", "Roboto, sans-serif")
+    .style("font-weight", "bold")
+    .style("pointer-events", "none");
+
+  const nodeById = {};
+  nodeGroup.each(function(d) { nodeById[d.id] = d3.select(this); });
+
+  // Ходок
+  const walker = svg.append("circle")
+    .attr("r", 7)
+    .attr("fill", "#facc15")
+    .attr("stroke", "#f97316")
+    .attr("stroke-width", 2)
+    .attr("opacity", 0);
+
+  let centerNode = null;
+
+  const lenSlider   = document.getElementById("walk-length");
+  const lenValue    = document.getElementById("walk-length-value");
+  const countSlider = document.getElementById("walk-count");
+  const countValue  = document.getElementById("walk-count-value");
+  const sampleBtn   = document.getElementById("sample-token-btn");
+  const seqDiv      = document.getElementById("walk-sequence");
+
+  const maxL = parseInt(lenSlider.max, 10);
+
+  // Размерность эмбеддинга токена (для визуализации)
+  const D = 6;
+
+  // s = 1: по одному вектору на каждую длину ℓ
+  let tokenMatrix = new Array(maxL + 1).fill(null);
+
+  // Цветовая шкала по величине компоненты
+  const valueScale = d3.scaleLinear()
+    .domain([0, 1])
+    .range(["#020617", "#22c55e"]);
+
+  lenSlider.addEventListener("input", () => {
+    lenValue.textContent = lenSlider.value;
+  });
+  countSlider.addEventListener("input", () => {
+    countValue.textContent = countSlider.value;
+  });
+
+  // Выбор центра: зелёная подсветка + сброс матрицы
+  nodeGroup.on("click", function(event, d) {
+    centerNode = d;
+
+    nodeGroup.selectAll("circle")
+      .interrupt()
+      .attr("r", 18)
+      .attr("fill", "#020617")
+      .attr("stroke", "#9ca3af")
+      .attr("stroke-width", 2);
+
+    const c = d3.select(this).select("circle");
+    c.attr("fill", "#22c55e")
+     .attr("stroke", "#16a34a")
+     .attr("stroke-width", 3)
+     .attr("r", 20)
+     .transition()
+     .duration(250)
+     .attr("r", 22)
+     .transition()
+     .duration(250)
+     .attr("r", 20);
+
+    clearTokenHighlight(false);
+    seqDiv.textContent = "Center node v = " + d.id +
+      ". Choose ℓ and M, then press “Generate token”.";
+
+    // новый центр → обнуляем матрицу (s = 1)
+    tokenMatrix = new Array(maxL + 1).fill(null);
+    renderTokenMatrix();
+  });
+
+  sampleBtn.addEventListener("click", () => {
+    if (centerNode == null) {
+      seqDiv.textContent = "Pick a center node first (click on any circle).";
+      return;
+    }
+    const L = parseInt(lenSlider.value, 10);
+    const M = parseInt(countSlider.value, 10);
+    generateTokenForCenter(centerNode, L, M);
+  });
+
+  function generateTokenForCenter(center, L, M) {
+    clearTokenHighlight(true); // не трогаем зелёный центр
+
+    const unionVisited = new Set();
+    const visitedPaths = [];
+
+    for (let w = 0; w < M; w++) {
+      let current = center.id;
+      const path = [current];
+      unionVisited.add(current);
+
+      for (let step = 0; step < L; step++) {
+        const neigh = neighborsOf(current);
+        if (neigh.length === 0) break;
+        const next = neigh[Math.floor(Math.random() * neigh.length)];
+        path.push(next);
+        unionVisited.add(next);
+        current = next;
+      }
+      visitedPaths.push(path);
+    }
+
+    // Подсвечиваем только объединение вершин (subgraph token), рёбра пока нет
+    nodeGroup.selectAll("circle")
+      .transition().duration(200)
+      .attr("fill", d => {
+        if (center && d.id === center.id) return "#22c55e";
+        return unionVisited.has(d.id) ? "#1d4ed8" : "#020617";
+      })
+      .attr("stroke", d => {
+        if (center && d.id === center.id) return "#16a34a";
+        return "#9ca3af";
+      })
+      .attr("stroke-width", d => (center && d.id === center.id) ? 3 : 2);
+
+    // Рёбра: фоновые, будут загораться по мере прохождения walker’а
+    link
+      .transition().duration(200)
+      .attr("stroke", "#374151")
+      .attr("stroke-width", 2)
+      .attr("opacity", 0.4);
+
+    const nodesArr = Array.from(unionVisited).sort((a,b) => a-b);
+    seqDiv.textContent =
+      "Token for center v = " + center.id +
+      " with length ℓ = " + L +
+      " and M = " + M +
+      ": nodes { " + nodesArr.join(", ") + " }";
+
+    animateWalker(center.id, visitedPaths, unionVisited);
+
+    // s = 1: обновляем строку для длины ℓ
+    addOrUpdateTokenRow(L);
+  }
+
+  // s = 1: одна строка на каждую длину ℓ
+  function addOrUpdateTokenRow(lengthL) {
+    const vec = d3.range(D).map(() => Math.random()); // псевдо-эмбеддинг
+    tokenMatrix[lengthL] = { L: lengthL, vector: vec };
+    renderTokenMatrix();
+  }
+
+  function renderTokenMatrix() {
+    const svgMatrix = d3.select("#token-matrix");
+    if (svgMatrix.empty()) return;
+
+    const rowHeight = 12;
+    const rowGap = 3;
+    const colWidth = 14;
+    const leftMargin = 22;
+    const topMargin = 6;
+
+    // Используем только те длины ℓ, для которых уже есть вектор
+    const rowsData = tokenMatrix
+      .map((row, L) => row ? row : null)
+      .filter(row => row !== null)
+      .sort((a, b) => a.L - b.L);
+
+    const height = topMargin + rowsData.length * (rowHeight + rowGap);
+    svgMatrix.attr("height", Math.max(60, height));
+
+    const rows = svgMatrix.selectAll("g.token-row")
+      .data(rowsData, d => d.L);
+
+    const rowsEnter = rows.enter().append("g")
+      .attr("class", "token-row")
+      .attr("transform", (d, i) =>
+        `translate(0, ${topMargin + i * (rowHeight + rowGap)})`);
+
+    // Подпись слева: ℓ = ...
+    rowsEnter.append("text")
+      .attr("x", 0)
+      .attr("y", rowHeight - 2)
+      .attr("fill", "#9ca3af")
+      .attr("font-size", 8)
+      .attr("font-family", "monospace")
+      .text(d => "ℓ=" + d.L);
+
+    // Прямоугольники компонент вектора
+    rowsEnter.each(function(rowData) {
+      const g = d3.select(this);
+      g.selectAll("rect")
+        .data(rowData.vector)
+        .enter()
+        .append("rect")
+        .attr("x", (v, j) => leftMargin + j * (colWidth + 2))
+        .attr("y", 0)
+        .attr("width", colWidth)
+        .attr("height", rowHeight)
+        .attr("rx", 2)
+        .attr("fill", v => valueScale(v))
+        .attr("stroke", "#4b5563")
+        .attr("stroke-width", 0.5);
+    });
+
+    rows.merge(rowsEnter)
+      .attr("transform", (d, i) =>
+        `translate(0, ${topMargin + i * (rowHeight + rowGap)})`);
+
+    rows.exit().remove();
+  }
+
+  // Анимация ходока и пошаговое подсвечивание рёбер
+  function animateWalker(centerId, paths, unionVisited) {
+    if (!paths.length) return;
+
+    const cSel = nodeById[centerId];
+    const cData = cSel.datum();
+    walker
+      .attr("cx", cData.x)
+      .attr("cy", cData.y)
+      .attr("opacity", 1);
+
+    let pathIndex = 0;
+
+    function runNextPath() {
+      if (pathIndex >= paths.length) {
+        walker.transition().delay(300).duration(400)
+          .attr("opacity", 0);
+        return;
+      }
+      const path = paths[pathIndex];
+      pathIndex++;
+
+      const stepDuration = 600;
+      let t = 0;
+
+      for (let i = 0; i < path.length; i++) {
+        const nodeId = path[i];
+        setTimeout(() => {
+          const nSel = nodeById[nodeId];
+          const d = nSel.datum();
+
+          walker.transition().duration(stepDuration - 100)
+            .attr("cx", d.x)
+            .attr("cy", d.y);
+
+          if (i > 0) {
+            const prevId = path[i - 1];
+            highlightEdge(prevId, nodeId);
+          }
+
+          const circ = nSel.select("circle");
+          const baseFill = (centerNode && nodeId === centerNode.id)
+              ? "#22c55e"
+              : (unionVisited.has(nodeId) ? "#1d4ed8" : "#020617");
+
+          circ.transition().duration(150)
+            .attr("fill", "#f97316")
+            .transition().duration(250)
+            .attr("fill", baseFill);
+        }, t);
+
+        t += stepDuration;
+      }
+
+      setTimeout(runNextPath, path.length * stepDuration + 200);
+    }
+
+    runNextPath();
+  }
+
+  function highlightEdge(a, b) {
+    const key1 = a + "-" + b;
+    const key2 = b + "-" + a;
+
+    link
+      .filter(d => {
+        const k = d.source.id + "-" + d.target.id;
+        return k === key1 || k === key2;
+      })
+      .transition().duration(200)
+      .attr("stroke", "#38bdf8")
+      .attr("stroke-width", 3)
+      .attr("opacity", 0.9);
+  }
+
+  function neighborsOf(nodeId) {
+    const neigh = [];
+    links.forEach(l => {
+      if (l.source.id === nodeId) neigh.push(l.target.id);
+      else if (l.target.id === nodeId) neigh.push(l.source.id);
+    });
+    return neigh;
+  }
+
+  // resetCenter=false → не сбрасывать зелёный центр
+  function clearTokenHighlight(resetCenter = true) {
+    nodeGroup.selectAll("circle")
+      .transition().duration(200)
+      .attr("fill", d => {
+        if (!resetCenter && centerNode && d.id === centerNode.id) return "#22c55e";
+        return "#020617";
+      })
+      .attr("stroke", d => {
+        if (!resetCenter && centerNode && d.id === centerNode.id) return "#16a34a";
+        return "#9ca3af";
+      })
+      .attr("stroke-width", d => {
+        if (!resetCenter && centerNode && d.id === centerNode.id) return 3;
+        return 2;
+      });
+
+    link
+      .transition().duration(200)
+      .attr("stroke", "#374151")
+      .attr("stroke-width", 2)
+      .attr("opacity", 0.7);
+
+    walker.attr("opacity", 0);
+  }
+
+  simulation.on("tick", () => {
+    link
+      .attr("x1", d => d.source.x)
+      .attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x)
+      .attr("y2", d => d.target.y);
+
+    nodeGroup
+      .attr("transform", d => `translate(${d.x},${d.y})`);
+  });
+
+  function dragstarted(event, d) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+  function dragged(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
+  }
+  function dragended(event, d) {
+    if (!event.active) simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+  }
+})();
+
+
+        (function() {
+            const container = document.getElementById('bidirectional-mamba-viz');
+if (!container) return;
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            const svg = d3.select("#bidirectional-mamba-viz").append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            // --- CONFIG ---
+            const numTokens = 7;
+            const tokenSize = 50;
+            const spacing = 70;
+            const startX = (width - (numTokens - 1) * spacing) / 2;
+            const centerY = height / 2;
+
+            // Create Token Sequence (Middle Row)
+            const tokens = d3.range(numTokens).map(i => ({
+                id: i,
+                x: startX + i * spacing,
+                y: centerY
+            }));
+
+            // --- VISUAL ELEMENTS ---
+
+            // 1. Draw Tokens
+            const tokenGroup = svg.append("g");
+            
+            const tokenNodes = tokenGroup.selectAll("g")
+                .data(tokens)
+                .enter().append("g")
+                .attr("transform", d => `translate(${d.x}, ${d.y})`);
+
+            tokenNodes.append("rect")
+                .attr("width", tokenSize)
+                .attr("height", tokenSize)
+                .attr("x", -tokenSize/2)
+                .attr("y", -tokenSize/2)
+                .attr("rx", 8)
+                .attr("fill", "#1e293b")
+                .attr("stroke", "#475569")
+                .attr("stroke-width", 2);
+
+            tokenNodes.append("text")
+                .text(d => `v${d.id}`)
+                .attr("text-anchor", "middle")
+                .attr("dy", ".35em")
+                .attr("fill", "#94a3b8")
+                .attr("font-size", "14px")
+                .attr("font-family", "monospace")
+                .attr("font-weight", "bold");
+
+            // 2. Forward SSM Path (Blue, Top)
+            const forwardGroup = svg.append("g");
+            const forwardY = centerY - 80;
+            
+            forwardGroup.append("text")
+                .text("Forward SSM →")
+                .attr("x", startX - 80)
+                .attr("y", forwardY + 5)
+                .attr("fill", "#60a5fa")
+                .attr("font-size", "12px")
+                .attr("font-family", "monospace");
+
+            // Forward Path Line
+            const forwardPath = forwardGroup.append("path")
+                .attr("d", `M ${startX - 30} ${forwardY} L ${startX + (numTokens-1) * spacing + 30} ${forwardY}`)
+                .attr("stroke", "#3b82f6")
+                .attr("stroke-width", 4)
+                .attr("fill", "none")
+                .attr("opacity", 0.3);
+
+            // Forward "wave" circle
+            const forwardWave = forwardGroup.append("circle")
+                .attr("r", 12)
+                .attr("fill", "#3b82f6")
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 2)
+                .attr("cx", startX - 30)
+                .attr("cy", forwardY)
+                .attr("opacity", 0);
+
+            // 3. Backward SSM Path (Orange, Bottom)
+            const backwardGroup = svg.append("g");
+            const backwardY = centerY + 80;
+            
+            backwardGroup.append("text")
+                .text("← Backward SSM")
+                .attr("x", startX + (numTokens-1) * spacing + 40)
+                .attr("y", backwardY + 5)
+                .attr("fill", "#fb923c")
+                .attr("font-size", "12px")
+                .attr("font-family", "monospace");
+
+            // Backward Path Line
+            const backwardPath = backwardGroup.append("path")
+                .attr("d", `M ${startX + (numTokens-1) * spacing + 30} ${backwardY} L ${startX - 30} ${backwardY}`)
+                .attr("stroke", "#f59e0b")
+                .attr("stroke-width", 4)
+                .attr("fill", "none")
+                .attr("opacity", 0.3);
+
+            // Backward "wave" circle
+            const backwardWave = backwardGroup.append("circle")
+                .attr("r", 12)
+                .attr("fill", "#f59e0b")
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 2)
+                .attr("cx", startX + (numTokens-1) * spacing + 30)
+                .attr("cy", backwardY)
+                .attr("opacity", 0);
+
+            // --- ANIMATION LOGIC ---
+            function runBidirectionalAnimation() {
+                const duration = 2500;
+
+                // Reset token colors
+                tokenNodes.selectAll("rect")
+                    .transition().duration(300)
+                    .attr("fill", "#1e293b")
+                    .attr("stroke", "#475569");
+
+                // FORWARD PASS
+                forwardWave.attr("opacity", 1)
+                    .attr("cx", startX - 30)
+                    .transition()
+                    .duration(duration)
+                    .ease(d3.easeLinear)
+                    .attr("cx", startX + (numTokens-1) * spacing + 30)
+                    .tween("processForward", function() {
+                        return function(t) {
+                            // Highlight tokens as wave passes
+                            const currentX = startX - 30 + t * ((numTokens-1) * spacing + 60);
+                            tokens.forEach((token, i) => {
+                                if (currentX >= token.x - spacing/2 && currentX < token.x + spacing/2) {
+                                    d3.select(tokenNodes.nodes()[i]).select("rect")
+                                        .attr("fill", "#1e3a8a")
+                                        .attr("stroke", "#3b82f6");
+                                }
+                            });
+                        };
+                    })
+                    .on("end", () => {
+                        forwardWave.attr("opacity", 0);
+                    });
+
+                // BACKWARD PASS (starts slightly delayed for clarity)
+                setTimeout(() => {
+                    backwardWave.attr("opacity", 1)
+                        .attr("cx", startX + (numTokens-1) * spacing + 30)
+                        .transition()
+                        .duration(duration)
+                        .ease(d3.easeLinear)
+                        .attr("cx", startX - 30)
+                        .tween("processBackward", function() {
+                            return function(t) {
+                                const currentX = (startX + (numTokens-1) * spacing + 30) - t * ((numTokens-1) * spacing + 60);
+                                tokens.forEach((token, i) => {
+                                    if (currentX <= token.x + spacing/2 && currentX > token.x - spacing/2) {
+                                        d3.select(tokenNodes.nodes()[i]).select("rect")
+                                            .attr("fill", "#78350f")
+                                            .attr("stroke", "#f59e0b");
+                                    }
+                                });
+                            };
+                        })
+                        .on("end", () => {
+                            backwardWave.attr("opacity", 0);
+                            
+                            // Final Combined State (purple glow = sum of both)
+                            setTimeout(() => {
+                                tokenNodes.selectAll("rect")
+                                    .transition().duration(800)
+                                    .attr("fill", "#581c87")
+                                    .attr("stroke", "#a855f7");
+                                
+                                // Add glow effect
+                                tokenNodes.selectAll("rect")
+                                    .transition().delay(800).duration(400)
+                                    .attr("stroke-width", 4)
+                                    .transition().duration(400)
+                                    .attr("stroke-width", 2);
+                            }, 300);
+                        });
+                }, 400); // Slight delay so they overlap nicely
+            }
+
+            // Start on load
+            runBidirectionalAnimation();
+
+            // Replay button
+            const replayBtn = document.getElementById('bidir-replay-btn');
+            if (replayBtn) replayBtn.addEventListener('click', runBidirectionalAnimation);
+
+        })();
+
+        async function loadCoraFromJSON() {
+            try {
+                console.log('🔄 Attempting to load Cora dataset from cora_visualization.json...');
+                const response = await fetch('./data/cora_visualization.json');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                console.log(`✅ Loaded REAL Cora from JSON: ${data.nodes.length} nodes, ${data.links.length} edges`);
+
+                // Добавляем случайные размеры для визуализации если их нет
+                data.nodes.forEach(node => {
+                    if (!node.val) {
+                        node.val = 1 + Math.random() * 2;
+                    }
+                });
+
+                return data;
+
+            } catch (error) {
+                console.warn('⚠️ Failed to load cora_visualization.json:', error.message);
+                console.log('📦 Falling back to embedded subset (300 nodes)...');
+                return getEmbeddedCoraData();
+            }
+        }
+        
+        function getEmbeddedCoraData() {
+    const topics = [
+        'Case_Based', 'Genetic_Algorithms', 'Neural_Networks',
+        'Probabilistic_Methods', 'Reinforcement_Learning',
+        'Rule_Learning', 'Theory'
+    ];
+
+    const classDistribution = [
+        { topic: 0, count: 42 }, { topic: 1, count: 43 },
+        { topic: 2, count: 85 }, { topic: 3, count: 38 },
+        { topic: 4, count: 22 }, { topic: 5, count: 35 },
+        { topic: 6, count: 35 }
+    ];
+
+    const nodes = [];
+    let nodeId = 0;
+
+    classDistribution.forEach(({ topic, count }) => {
+        for (let i = 0; i < count; i++) {
+            nodes.push({
+                id: nodeId++,
+                label: topics[topic],
+                labelIdx: topic,
+                val: 1 + Math.random() * 2
+            });
+        }
+    });
+
+    const links = [];
+    const avgDegree = 4;
+
+    nodes.forEach((node, idx) => {
+        const numCitations = Math.max(2, Math.min(6, 
+            Math.floor(avgDegree * (0.6 + Math.random() * 0.8))
+        ));
+
+        for (let i = 0; i < numCitations; i++) {
+            let targetIdx;
+
+            if (Math.random() < 0.75) {
+                const sameClassNodes = nodes
+                    .map((n, i) => ({ node: n, index: i }))
+                    .filter(({ node }) => node.labelIdx === nodes[idx].labelIdx && node.id !== nodes[idx].id);
+
+                if (sameClassNodes.length > 0) {
+                    targetIdx = sameClassNodes[Math.floor(Math.random() * sameClassNodes.length)].index;
+                } else {
+                    targetIdx = Math.floor(Math.random() * nodes.length);
+                }
+            } else {
+                targetIdx = Math.floor(Math.random() * nodes.length);
+            }
+
+            if (targetIdx !== idx && 
+                !links.some(l => 
+                    (l.source === idx && l.target === targetIdx) ||
+                    (l.source === targetIdx && l.target === idx)
+                )) {
+                links.push({ source: idx, target: targetIdx });
+            }
+        }
+    });
+
+    console.log(`📦 Встроенные данные Cora: ${nodes.length} нод, ${links.length} связей`);
+    return { nodes, links };
+}
+
+        // Shared palette so ground-truth and predicted views match colors per labelIdx
+        const coraPalette = d3.schemeCategory10.concat(['#a855f7', '#14b8a6', '#fb7185', '#facc15']);
+
+        (async function() {
+            const container = document.getElementById('cora-viz');
+            if (!container) return;
+
+            const data = await loadCoraFromJSON();
+
+            const coraGraph = ForceGraph3D()
+                (container)
+                .width(container.clientWidth)
+                .height(container.clientHeight)
+                .graphData(data)
+                .nodeColor(node => coraPalette[node.labelIdx % coraPalette.length])
+                .nodeLabel(node => `Paper ${node.id}\n${node.label || ''}`)
+                .linkWidth(0.5)
+                .linkOpacity(0.5)
+                .backgroundColor('#0b1120');
+
+            window.resetCamera = () => {
+                coraGraph.cameraPosition({ x: 0, y: 0, z: 1000 }, { x: 0, y: 0, z: 0 }, 1000);
+            };
+
+            window.addEventListener('resize', () => {
+                coraGraph.width(container.clientWidth);
+                coraGraph.height(container.clientHeight);
+            });
+        })();
+
+
+        (function() {
+  const container = document.getElementById('mamba-viz');
+  if (!container) return;
+
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  container.innerHTML = '';
+
+  const svg = d3.select("#mamba-viz").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  // === CONFIG ===
+  const config = {
+    tokenSize: 50,
+    tokenSpacing: 25,
+    gateRadius: 40,
+    animationDuration: 700,
+    pauseDuration: 800,
+    tokenSlideDistance: 80
+  };
+
+  const sequence = [
+    { id: 'Paper 0', type: 'relevant', value: 4.2 },
+    { id: 'Paper 4', type: 'relevant', value: 3.8 },
+    { id: 'Noise 12', type: 'noise', value: 0.5 },
+    { id: 'Noise 7', type: 'noise', value: 0.7 },
+    { id: 'Paper 3', type: 'relevant', value: 4.5 },
+    { id: 'Paper 9', type: 'relevant', value: 3.5 },
+    { id: 'Noise 2', type: 'noise', value: 0.3 },
+    { id: 'Paper 5', type: 'relevant', value: 4.0 }
+  ];
+
+  const centerX = width / 2;
+  const tokenY = height * 0.2;
+  const gateY = height * 0.48;
+  const stateY = height * 0.88;
+
+  let currentStep = 0;
+  let hiddenState = 0;
+  let animationTimer = null;
+
+  // === GROUPS ===
+  const tokenGroup = svg.append('g');
+  const gateGroup = svg.append('g');
+  const stateGroup = svg.append('g');
+  const labelGroup = svg.append('g');
+
+  // === LABELS ===
+  labelGroup.append('text')
+    .attr('x', centerX)
+    .attr('y', tokenY - 60)
+    .attr('text-anchor', 'middle')
+    .attr('fill', '#94a3b8')
+    .attr('font-size', '14px')
+    .attr('font-weight', '600')
+    .attr('font-family', 'Roboto, sans-serif')
+    .text('Token Sequence');
+
+  labelGroup.append('text')
+    .attr('x', centerX)
+    .attr('y', gateY - 65)
+    .attr('text-anchor', 'middle')
+    .attr('fill', '#fbbf24')
+    .attr('font-size', '15px')
+    .attr('font-weight', '700')
+    .attr('font-family', 'Roboto, sans-serif')
+    .text('Selective Gate Δ');
+
+  labelGroup.append('text')
+    .attr('x', centerX)
+    .attr('y', stateY - 80)  // ← ПОДНЯЛ ВЫШЕ (было -50)
+    .attr('text-anchor', 'middle')
+    .attr('fill', '#60a5fa')
+    .attr('font-size', '14px')
+    .attr('font-weight', '600')
+    .attr('font-family', 'Roboto, sans-serif')
+    .text('Hidden State h_t');
+
+  // === GATE ===
+  gateGroup.append('circle')
+    .attr('cx', centerX)
+    .attr('cy', gateY)
+    .attr('r', config.gateRadius)
+    .attr('fill', 'none')
+    .attr('stroke', '#64748b')
+    .attr('stroke-width', 2)
+    .attr('opacity', 0.4);
+
+  const gateInner = gateGroup.append('circle')
+    .attr('cx', centerX)
+    .attr('cy', gateY)
+    .attr('r', 8)
+    .attr('fill', '#fbbf24')
+    .style('filter', 'drop-shadow(0 0 8px rgba(251,191,36,0.6))');
+
+  const gateText = gateGroup.append('text')
+    .attr('x', centerX)
+    .attr('y', gateY + config.gateRadius + 25)
+    .attr('text-anchor', 'middle')
+    .attr('fill', '#cbd5e1')
+    .attr('font-size', '12px')
+    .attr('font-family', 'monospace')
+    .text('Closed');
+
+  // === STATE BARS ===
+  const bars = [];
+  for (let i = 0; i < sequence.length; i++) {
+    const bar = stateGroup.append('rect')
+      .attr('x', centerX - (sequence.length * 10 / 2) + i * 10)
+      .attr('y', stateY)
+      .attr('width', 8)
+      .attr('height', 0)
+      .attr('fill', '#475569')
+      .attr('rx', 2);
+    bars.push(bar);
+  }
+
+  const stateValueText = stateGroup.append('text')
+    .attr('x', centerX)
+    .attr('y', stateY + 30)
+    .attr('text-anchor', 'middle')
+    .attr('fill', '#60a5fa')
+    .attr('font-size', '16px')
+    .attr('font-weight', '700')
+    .attr('font-family', 'monospace')
+    .text('h = 0.00');
+
+  // === TOKENS (создаём очередь) ===
+  const tokenElements = sequence.map((token, i) => {
+    const tokenG = tokenGroup.append('g')
+      .attr('transform', `translate(${centerX + (i - currentStep) * (config.tokenSize + config.tokenSpacing)}, ${tokenY})`);
+
+    tokenG.append('rect')
+      .attr('x', -config.tokenSize/2)
+      .attr('y', -config.tokenSize/2)
+      .attr('width', config.tokenSize)
+      .attr('height', config.tokenSize)
+      .attr('rx', 8)
+      .attr('fill', '#1e293b')
+      .attr('stroke', '#475569')
+      .attr('stroke-width', 2);
+
+    tokenG.append('text')
+      .attr('text-anchor', 'middle')
+      .attr('dy', '.35em')
+      .attr('fill', '#94a3b8')
+      .attr('font-size', '11px')
+      .attr('font-weight', '600')
+      .attr('font-family', 'monospace')
+      .text(token.id);
+
+    return { g: tokenG, data: token };
+  });
+
+  // === STEP INFO ===
+  const stepInfo = document.getElementById('step-info');
+
+  // === ANIMATION ===
+  function processToken(index) {
+    if (index >= sequence.length) {
+      if (stepInfo) stepInfo.innerHTML = '<div style="color:#4ade80; font-weight:600">✓ Sequence complete!</div>';
+      return;
+    }
+
+    const token = sequence[index];
+    const isRelevant = token.type === 'relevant';
+    const gateSize = isRelevant ? config.gateRadius * 0.8 : 10;
+    const color = isRelevant ? '#4ade80' : '#f87171';
+
+    // Плавно сдвигаем все токены влево
+    tokenElements.forEach((te, i) => {
+      te.g.transition()
+        .duration(config.animationDuration)
+        .ease(d3.easeCubicInOut)
+        .attr('transform', `translate(${centerX + (i - index) * (config.tokenSize + config.tokenSpacing)}, ${tokenY})`);
+    });
+
+    // Подсвечиваем активный токен
+    tokenElements[index].g.select('rect')
+      .transition().duration(200)
+      .attr('stroke', color)
+      .attr('stroke-width', 3);
+
+    // Анимация gate
+    gateInner
+      .transition()
+      .duration(config.animationDuration)
+      .attr('r', gateSize)
+      .attr('fill', color)
+      .style('filter', `drop-shadow(0 0 ${gateSize}px ${color})`);
+
+    gateText
+      .transition()
+      .duration(config.animationDuration)
+      .attr('fill', color)
+      .text(isRelevant ? 'OPEN' : 'Closed');
+
+    // ← УБРАЛИ pulse линии
+
+    // Обновляем hidden state
+    if (isRelevant) {
+      hiddenState += token.value;
+    }
+
+    // Обновляем бары
+    if (index < bars.length) {
+      bars[index]
+        .transition()
+        .duration(config.animationDuration)
+        .attr('y', stateY - Math.min(hiddenState * 3, 80))
+        .attr('height', Math.min(hiddenState * 3, 80))
+        .attr('fill', isRelevant ? '#3b82f6' : '#475569');
+    }
+
+    stateValueText
+      .transition()
+      .duration(config.animationDuration)
+      .tween('text', function() {
+        const i = d3.interpolate(parseFloat(this.textContent.split(' ')[2]), hiddenState);
+        return function(t) {
+          this.textContent = `h = ${i(t).toFixed(2)}`;
+        };
+      });
+
+    // Step info
+    if (stepInfo) {
+      const formula = isRelevant 
+        ? `h<sub>${index+1}</sub> = 0.9·h<sub>${index}</sub> + ${token.value.toFixed(1)} = ${hiddenState.toFixed(2)}`
+        : `h<sub>${index+1}</sub> = 0.9·h<sub>${index}</sub> + 0 = ${hiddenState.toFixed(2)} (filtered)`;
+      
+      stepInfo.innerHTML = `
+        <div style="font-weight:600; color:${color}; margin-bottom:4px">
+          Step ${index + 1}: ${token.id}
+        </div>
+        <div style="font-size:10px; font-family:monospace">${formula}</div>
+      `;
+    }
+
+    // Следующий токен
+    currentStep = index + 1;
+    animationTimer = setTimeout(
+      () => processToken(currentStep),
+      config.animationDuration + config.pauseDuration
+    );
+  }
+
+  // === REPLAY ===
+  const replayBtn = document.getElementById('replay-btn');
+  if (replayBtn) {
+    replayBtn.addEventListener('click', function() {
+      if (animationTimer) clearTimeout(animationTimer);
+      currentStep = 0;
+      hiddenState = 0;
+
+      // Reset
+      bars.forEach(bar => {
+        bar.attr('height', 0).attr('y', stateY);
+      });
+      gateInner.attr('r', 8).attr('fill', '#fbbf24');
+      gateText.text('Closed').attr('fill', '#cbd5e1');
+      stateValueText.text('h = 0.00');
+      
+      tokenElements.forEach((te, i) => {
+        te.g.attr('transform', `translate(${centerX + i * (config.tokenSize + config.tokenSpacing)}, ${tokenY})`);
+        te.g.select('rect').attr('stroke', '#475569').attr('stroke-width', 2);
+      });
+
+      if (stepInfo) stepInfo.textContent = 'Starting animation...';
+      setTimeout(() => processToken(0), 500);
+    });
+  }
+
+  // Auto-start
+  setTimeout(() => processToken(0), 1000);
+})();
+
+
+(function() {
+  const mount = document.getElementById('gcn-local-viz');
+  if (!mount) return;
+
+  const payload = window.GCN_LOCAL_PAYLOAD;
+  if (!payload || !payload.layers || !payload.layers.length) return;
+
+  const loadD3 = () => new Promise((resolve, reject) => {
+    if (window.d3) { resolve(window.d3); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js';
+    s.async = true;
+    s.onload = () => resolve(window.d3);
+    s.onerror = () => reject(new Error('Failed to load d3'));
+    document.head.appendChild(s);
+  });
+
+  const root = document.createElement('div');
+  root.className = 'gmv-root';
+  mount.appendChild(root);
+
+  loadD3().then(d3 => {
+    const wrapper = d3.select(root).append('div').attr('class', 'gmv-wrapper');
+
+    // ========== LEFT: Force-directed Graph (как в Random Walks) ==========
+    const graphPanel = wrapper.append('div').attr('class', 'gmv-panel');
+    graphPanel.append('div').attr('class', 'gmv-title').text('Token subgraph');
+
+    const graphContainer = graphPanel.append('div')
+      .style('position', 'relative')
+      .style('width', '100%')
+      .style('height', '400px');
+
+    const svg = graphContainer.append('svg')
+      .attr('width', '100%')
+      .attr('height', '100%')
+      .attr('viewBox', '0 0 420 420');
+
+    // Берём граф из payload
+    const gcnGraph = payload.graph;
+    const nodes = gcnGraph.nodes.map(n => ({ 
+      id: n.id,
+      originalData: n  // сохраняем оригинальные данные для hover
+    }));
+    const links = gcnGraph.links.map(l => ({
+      source: l.source,
+      target: l.target
+    }));
+
+    // Force simulation - ТОЧНО КАК В RANDOM WALKS
+    const simulation = d3.forceSimulation(nodes)
+      .force("link", d3.forceLink(links).id(d => d.id).distance(80))
+      .force("charge", d3.forceManyBody().strength(-300))
+      .force("center", d3.forceCenter(210, 210))
+      .force("collide", d3.forceCollide(25));
+
+    // Рёбра
+    const gLinks = svg.append('g').attr('class', 'links');
+    const linkLines = gLinks.selectAll('line')
+      .data(links)
+      .enter().append('line')
+      .attr('class', 'graph-link')
+      .attr('stroke', '#4b5563')
+      .attr('stroke-width', 1.5);
+
+    // Ноды
+    const gNodes = svg.append('g').attr('class', 'nodes');
+    const nodeGroup = gNodes.selectAll('g')
+      .data(nodes)
+      .enter().append('g')
+      .attr('class', 'node-group')
+      .call(d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended)
+      );
+
+    const nodeCircles = nodeGroup.append('circle')
+      .attr('class', 'graph-node')
+      .attr('r', d => d.originalData.is_center ? 13 : 8)
+      .attr('fill', d => d.originalData.is_center ? '#ef4444' : '#3b82f6')
+      .attr('stroke', '#6b7280')
+      .attr('stroke-width', d => d.originalData.is_center ? 2.5 : 1.5)
+      .attr('id', d => 'gcn-node-' + d.id);
+
+    // Подписи нод
+    const gLabels = svg.append('g').attr('class', 'labels');
+    gLabels.selectAll('text')
+      .data(nodes)
+      .enter().append('text')
+      .attr('text-anchor', 'middle')
+      .attr('dy', -15)
+      .attr('font-size', 11)
+      .attr('fill', '#e5e7eb')
+      .attr('font-weight', 'bold')
+      .text(d => d.id);
+
+    // Обновление позиций
+    simulation.on("tick", () => {
+      linkLines
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+
+      nodeGroup
+        .attr("transform", d => `translate(${d.x},${d.y})`);
+      
+      gLabels.selectAll('text')
+        .attr("x", d => d.x)
+        .attr("y", d => d.y);
+    });
+
+    // Drag handlers
+    function dragstarted(event, d) {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+
+    function dragged(event, d) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+
+    function dragended(event, d) {
+      if (!event.active) simulation.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+    }
+
+    // Функции для подсветки (вызываются из правой панели)
+    function highlightNodes(nodeIds) {
+      nodeCircles
+        .transition().duration(200)
+        .attr('r', d => nodeIds.includes(d.id) ? 
+          (d.originalData.is_center ? 16 : 11) : 
+          (d.originalData.is_center ? 13 : 8))
+        .attr('fill', d => {
+          if (!nodeIds.includes(d.id)) return d.originalData.is_center ? '#ef4444' : '#3b82f6';
+          return '#facc15';
+        })
+        .attr('stroke-width', d => nodeIds.includes(d.id) ? 3 : 
+          (d.originalData.is_center ? 2.5 : 1.5));
+    }
+
+    function highlightEdge(u, v) {
+        linkLines
+          .transition().duration(200)
+          .style('stroke', d => {
+            const sid = typeof d.source === 'object' ? d.source.id : d.source;
+            const tid = typeof d.target === 'object' ? d.target.id : d.target;
+            const isMatch = (sid === u && tid === v) || (sid === v && tid === u);
+  return isMatch ? '#facc15' : '#4b5563';
+          })
+          .style('stroke-width', d => {
+            const sid = typeof d.source === 'object' ? d.source.id : d.source;
+            const tid = typeof d.target === 'object' ? d.target.id : d.target;
+            return (sid === u && tid === v) || (sid === v && tid === u) ? '3px' : '1.5px';
+          });
+      }
+
+    function resetGraph() {
+      nodeCircles
+        .interrupt()
+        .transition().duration(200)
+        .attr('r', d => d.originalData.is_center ? 13 : 8)
+        .attr('fill', d => d.originalData.is_center ? '#ef4444' : '#3b82f6')
+        .attr('stroke-width', d => d.originalData.is_center ? 2.5 : 1.5);
+
+      linkLines
+    .interrupt()
+    .transition().duration(200)
+    .style('stroke', '#4b5563')  // ← STYLE вместо ATTR
+    .style('stroke-width', '1.5px');  // ← STYLE вместо ATTR
+    }
+
+    function highlightMultipleEdges(edgePairs) {
+  // edgePairs = [[u1, v1], [u2, v2], ...]
+  console.log('Highlighting multiple edges:', edgePairs);
+  
+  linkLines
+    .transition().duration(200)
+    .style('stroke', d => {
+      const sid = typeof d.source === 'object' ? d.source.id : d.source;
+      const tid = typeof d.target === 'object' ? d.target.id : d.target;
+      
+      // Проверяем, есть ли этот edge в массиве пар
+      const isMatch = edgePairs.some(([u, v]) => 
+        (sid === u && tid === v) || (sid === v && tid === u)
+      );
+      
+      return isMatch ? '#facc15' : '#4b5563';
+    })
+    .style('stroke-width', d => {
+      const sid = typeof d.source === 'object' ? d.source.id : d.source;
+      const tid = typeof d.target === 'object' ? d.target.id : d.target;
+      
+      const isMatch = edgePairs.some(([u, v]) => 
+        (sid === u && tid === v) || (sid === v && tid === u)
+      );
+      
+      return isMatch ? '3px' : '1.5px';
+    });
+}
+
+
+    // Легенда
+    const legend = graphPanel.append('div').attr('class', 'gmv-legend');
+    legend.append('span').text('center is 0, others are neighbors');
+
+    // ========== RIGHT: Steps (ВСЯ ТВОЯ ОРИГИНАЛЬНАЯ ЛОГИКА) ==========
+    const layer = payload.layers[0];
+    const steps = layer.steps || [];
+
+    const detailPanel = wrapper.append('div').attr('class', 'gmv-panel');
+    detailPanel.append('div').attr('class', 'gmv-title')
+      .text('Local GCN encoder: step by step');
+
+    const stepButtonsWrap = detailPanel.append('div').attr('class', 'gmv-step-buttons');
+    const shapeNote = detailPanel.append('div').attr('class', 'gmv-shape-note')
+      .text(`Token: k = ${layer.shapeInfo.k} nodes, feature dim = ${layer.shapeInfo.featureDim}, hidden dim = ${layer.shapeInfo.hiddenDim}`);
+    const stepCard = detailPanel.append('div').attr('class', 'gmv-step-card');
+
+    let activeStepId = steps.length ? steps[0].id : null;
+    let hoverDetailDiv = null;
+
+    function drawMatrix(containerSel, step) {
+      const matrix = step.matrix;
+      containerSel.selectAll('*').remove();
+      if (!matrix || !matrix.values || !matrix.values.length) {
+        containerSel.append('div').text('no data');
+        return;
+      }
+
+      const numRows = matrix.values.length;
+      const numCols = Array.isArray(matrix.values[0]) ? matrix.values[0].length : 0;
+      if (!numCols) {
+        containerSel.append('div').text('bad matrix format');
+        return;
+      }
+
+      const rowLabels = (matrix.rows && matrix.rows.length === numRows)
+        ? matrix.rows
+        : Array.from({length: numRows}, (_, i) => String(i));
+      const colLabels = (matrix.cols && matrix.cols.length === numCols)
+        ? matrix.cols
+        : Array.from({length: numCols}, (_, j) => String(j));
+
+      const size = 60;
+      const svgWidth = numCols * size;
+      const svgHeight = numRows * size;
+      const svgM = containerSel.append('svg')
+        .attr('viewBox', `0 0 ${svgWidth} ${svgHeight}`)
+        .attr('width', svgWidth)
+        .attr('height', svgHeight);
+
+      const g = svgM.append('g');
+
+      const flat = matrix.values.flat();
+      const minVal = flat.length ? d3.min(flat) : -1;
+      const maxVal = flat.length ? d3.max(flat) : 1;
+
+      const colorScale = d3.scaleLinear()
+        .domain([minVal, 0, maxVal])
+        .range(['#1e3a8a', '#3b82f6', '#93c5fd'])  // тёмно-синий -> синий -> светло-голубой
+        .clamp(true);
+
+      matrix.values.forEach((row, i) => {
+        row.forEach((val, j) => {
+          const cell = g.append('g').attr('transform', `translate(${j * size},${i * size})`);
+          const rect = cell.append('rect')
+            .attr('width', size - 2)
+            .attr('height', size - 2)
+            .attr('fill', colorScale(val))
+            .attr('fill-opacity', 0.9)
+            .attr('stroke', '#020617')
+            .attr('stroke-width', 0.5)
+            .style('cursor', 'pointer');
+
+          rect.on('mouseenter', () => {
+            const rowId = rowLabels[i];
+            const colId = colLabels[j];
+            handleCellHover(step, i, j, rowId, colId, val);
+            rect.attr('stroke', '#facc15').attr('stroke-width', 1.5);
+          });
+          rect.on('mouseleave', () => {
+            rect.attr('stroke', '#020617').attr('stroke-width', 0.5);
+            resetGraph();
+            if (hoverDetailDiv) {
+              hoverDetailDiv.text('Hover over a cell to see computation details.');
+            }
+          });
+
+          rect.append('title').text(`[${rowLabels[i]}, ${colLabels[j]}] = ${val.toFixed(3)}`);
+        });
+      });
+    }
+
+    function drawVector(containerSel, step) {
+      const vector = step.vector;
+      containerSel.selectAll('*').remove();
+      if (!vector || !vector.values) {
+        containerSel.append('div').text('no data');
+        return;
+      }
+      const cellSize = 60;
+      const svgWidth = Math.max(1, vector.values.length) * cellSize;
+      const svgHeight = 70;
+      const svgV = containerSel.append('svg')
+        .attr('viewBox', `0 0 ${svgWidth} ${svgHeight}`)
+        .attr('width', svgWidth)
+        .attr('height', svgHeight);
+      
+      svgV.selectAll('rect').data(vector.values).enter().append('rect')
+        .attr('x', (_, idx) => idx * cellSize)
+        .attr('y', 10)
+        .attr('width', cellSize - 2)
+        .attr('height', 50)
+        .attr('fill', d => d >= 0 ? '#0ea5e9' : '#f97316')
+        .style('cursor', 'pointer')
+        .on('mouseenter', function(event, d) {
+          const idx = vector.values.indexOf(d);
+          const label = vector.labels[idx];
+          handleVectorHover(step, idx, label, d);
+          d3.select(this).attr('stroke', '#facc15').attr('stroke-width', 1.5);
+        })
+        .on('mouseleave', function() {
+          d3.select(this).attr('stroke', 'none');
+          resetGraph();
+          if (hoverDetailDiv) {
+            hoverDetailDiv.text('Hover over a column to see averaging details.');
+          }
+        })
+        .append('title')
+        .text((d, idx) => `${vector.labels[idx]} = ${d.toFixed(3)}`);
+    }
+
+    function handleCellHover(step, rowIndex, colIndex, rowId, colId, value) {
+      resetGraph();
+      const layerNodes = layer.tokenNodes || [];
+      const nodeIndex = rowIndex < layerNodes.length ? layerNodes[rowIndex] : null;
+      let text = '';
+
+      if (step.id === 'adjacency') {
+        const u = parseInt(rowId, 10);
+        const v = parseInt(colId, 10);
+        highlightNodes([u, v]);
+
+        if (value !== 0) {
+          highlightEdge(u, v);
+          text = `A[${u},${v}] = 1 → nodes ${u} and ${v} are directly connected within the token.`;
+        } else {
+          text = `A[${u},${v}] = 0 → nodes ${u} and ${v} are NOT connected (but may be indirectly connected through others).`;
+        }
+      } else if (step.id === 'input_features') {
+        if (nodeIndex !== null) {
+          highlightNodes([nodeIndex]);
+          text = `X[${nodeIndex},${colId}] = ${value.toFixed(3)} → this is the original feature ${colId} of node ${nodeIndex}, before any GCN processing.`;
+        }
+      } else if (step.id === 'x1') {
+        if (nodeIndex !== null) {
+          highlightNodes([nodeIndex]);
+          text = `X1[${nodeIndex},${colId}] = ${value.toFixed(3)} → after the first linear layer X·W1ᵀ, node ${nodeIndex} receives a hidden activation in dimension ${colId}.`;
+        }
+      } else if (step.id === 'ax1') {
+        if (nodeIndex !== null) {
+          const adjacencyStep = layer.steps.find(s => s.id === 'adjacency');
+          const x1Step = layer.steps.find(s => s.id === 'x1');
+          
+          let neighbors = [nodeIndex];
+          let sumTerms = [];
+          let sumValues = [];
+          let edgePairs = [];
+
+          if (adjacencyStep && x1Step && adjacencyStep.matrix && x1Step.matrix) {
+            const numNodes = adjacencyStep.matrix.values.length;
+            const colIndex = x1Step.matrix.cols.indexOf(colId);
+            
+            for (let j = 0; j < numNodes; j++) {
+              const aValue = adjacencyStep.matrix.values[nodeIndex][j];
+              if (aValue !== 0) {
+                if (j !== nodeIndex) {
+                  neighbors.push(j);
+                  edgePairs.push([nodeIndex, j]);
+                }
+                const xValue = x1Step.matrix.values[j][colIndex];
+                sumTerms.push(`${aValue}·${xValue.toFixed(2)}`);
+                sumValues.push(aValue * xValue);
+              }
+            }
+          }
+          
+          neighbors = [...new Set(neighbors)];
+          highlightNodes(neighbors);
+          highlightMultipleEdges(edgePairs);
+          
+          const sum = sumValues.reduce((a, b) => a + b, 0);
+          text = `AX1[${nodeIndex},${colId}] = ${sumTerms.join(' + ')} = ${sum.toFixed(3)}`;
+        }
+      } else if (step.id === 'h1') {
+        if (nodeIndex !== null) {
+          highlightNodes([nodeIndex]);
+          text = `H1[${nodeIndex},${colId}] = ${value.toFixed(3)} → after ReLU: if AX1 was negative, this will be 0, otherwise unchanged.`;
+        }
+      } else if (step.id === 'x2') {
+        if (nodeIndex !== null) {
+          highlightNodes([nodeIndex]);
+          text = `X2[${nodeIndex},${colId}] = ${value.toFixed(3)} → after the second linear layer H1·W2ᵀ, a deeper hidden representation is created.`;
+        }
+      } else if (step.id === 'ax2') {
+        if (nodeIndex !== null) {
+          const adjacencyStep = layer.steps.find(s => s.id === 'adjacency');
+          const x2Step = layer.steps.find(s => s.id === 'x2');
+          
+          let neighbors = [nodeIndex];
+          let sumTerms = [];
+          let sumValues = [];
+          let edgePairs = [];
+
+          if (adjacencyStep && x2Step && adjacencyStep.matrix && x2Step.matrix) {
+            const numNodes = adjacencyStep.matrix.values.length;
+            const colIndex = x2Step.matrix.cols.indexOf(colId);
+            
+            for (let j = 0; j < numNodes; j++) {
+              const aValue = adjacencyStep.matrix.values[nodeIndex][j];
+              if (aValue !== 0) {
+                if (j !== nodeIndex){
+                  neighbors.push(j);
+                  edgePairs.push([nodeIndex, j]);
+                } 
+                const xValue = x2Step.matrix.values[j][colIndex];
+                sumTerms.push(`${aValue}·${xValue.toFixed(2)}`);
+                sumValues.push(aValue * xValue);
+              }
+            }
+          }
+          
+          neighbors = [...new Set(neighbors)];
+          highlightNodes(neighbors);
+          highlightMultipleEdges(edgePairs);
+
+          const sum = sumValues.reduce((a, b) => a + b, 0);
+          text = `AX2[${nodeIndex},${colId}] = ${sumTerms.join(' + ')} = ${sum.toFixed(3)}`;
+        }
+      } else if (step.id === 'h2') {
+        if (nodeIndex !== null) {
+          highlightNodes([nodeIndex]);
+          text = `H2[${nodeIndex},${colId}] = ${value.toFixed(3)} → final activation of node ${nodeIndex} after the second ReLU.`;
+        }
+      }
+
+      if (hoverDetailDiv) {
+        hoverDetailDiv.text(text);
+      }
+    }
+
+    function handleVectorHover(step, index, label, value) {
+      resetGraph();
+      let text = `z[${label}] = ${value.toFixed(3)} → `;
+      
+      if (step.id === 'z') {
+        const h2Step = layer.steps.find(s => s.id === 'h2');
+        
+        if (h2Step && h2Step.matrix && h2Step.matrix.values) {
+          const numNodes = h2Step.matrix.values.length;
+          const colIndex = h2Step.matrix.cols.indexOf(label);
+          
+          let allNodes = [];
+          let sumTerms = [];
+          let sumValues = [];
+          
+          for (let i = 0; i < numNodes; i++) {
+            allNodes.push(i);
+            const hValue = h2Step.matrix.values[i][colIndex];
+            sumTerms.push(hValue.toFixed(2));
+            sumValues.push(hValue);
+          }
+          
+          highlightNodes(allNodes);
+          
+          const sum = sumValues.reduce((a, b) => a + b, 0);
+          const mean = sum / numNodes;
+          
+          text = `z[${label}] = (${sumTerms.join(' + ')}) / ${numNodes} = ${mean.toFixed(3)}`;
+        } else {
+          text += `this is the averaged value...`;
+        }
+      }
+      
+      if (hoverDetailDiv) {
+        hoverDetailDiv.text(text);
+      }
+    }
+
+    function renderStep() {
+      const step = steps.find(s => s.id === activeStepId) || steps[0];
+      stepCard.selectAll('*').remove();
+
+      stepCard.append('div').attr('class', 'gmv-step-title')
+        .text(step.title || activeStepId);
+
+      const formulaBox = stepCard.append('div').attr('class', 'gmv-formula');
+      if (step.formula) {
+        if (step.formula.lhs && step.formula.rhs) {
+          formulaBox.append('div').text(`${step.formula.lhs} = ${step.formula.rhs}`);
+        }
+      }
+
+      stepCard.append('div').attr('class', 'gmv-explain')
+        .text(step.explain || '');
+
+      const gridHolder = stepCard.append('div').attr('class', 'gmv-grid');
+
+      if (step.type === 'matrix') {
+        drawMatrix(gridHolder, step);
+      } else if (step.type === 'vector') {
+        drawVector(gridHolder, step);
+      } else {
+        gridHolder.append('div').text('Нет визуализации.');
+      }
+
+      hoverDetailDiv = stepCard.append('div')
+        .attr('class', 'gmv-hover-detail')
+        .style('border-top', '1px solid rgba(148,163,184,0.5)')
+        .style('margin-top', '8px')
+        .style('padding-top', '6px')
+        .style('font-size', '11px')
+        .style('color', '#a5b4fc')
+        .style('min-height', '40px')
+        .text('Hover over a cell to see calculation details.');
+
+      resetGraph();
+    }
+
+    const stepMeta = steps.map(s => ({
+      id: s.id,
+      label: s.title ? s.title.split(' ')[0] : s.id.toUpperCase()
+    }));
+
+    stepButtonsWrap.selectAll('button')
+      .data(stepMeta)
+      .enter().append('button')
+      .classed('active', d => d.id === activeStepId)
+      .text(d => d.label)
+      .on('click', (event, d) => {
+        activeStepId = d.id;
+        stepButtonsWrap.selectAll('button')
+          .classed('active', x => x.id === activeStepId);
+        renderStep();
+      });
+
+    renderStep();
+  }).catch(err => {
+    console.error(err);
+  });
+})();
+
+</script></body></html>
