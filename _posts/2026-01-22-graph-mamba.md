@@ -78,11 +78,6 @@ toc: false
             There is also a practical cost: each layer typically requires iterating over edges to aggregate messages, so deeper models mean more passes over the graph and higher memory/compute. This is especially painful for large, dense, or high-degree graphs.
         </p>
 
-<div class="key-takeaway">
-<strong>Key Challenge:</strong> Traditional GNNs require many layers to capture long-range dependencies, 
-            leading to over-smoothing, over-squashing and high computational costs.
-        </div>
-
 <details>
 <summary><strong>Python code:</strong> Loading the Cora dataset (from <code>tutorial/graph_mamba.ipynb</code>)</summary>
 
@@ -126,7 +121,7 @@ toc: false
   <ul> 
     <li><strong>\(\ell=0\):</strong> \(\mathcal{T}_{0}(v)\) contains only the center vertex \(v\).</li> <li><strong>\(\ell=1\):</strong> \(\mathcal{T}_{1}(v)\) typically captures a subset of the 1-hop neighborhood of \(v\).</li>
     <li><strong>\(\ell=2\):</strong> \(\mathcal{T}_{2}(v)\) expands toward 2-hop structure, with coverage determined by the random-walk samples.</li> 
-    <li><strong>\(\ell=m\):</strong> \(\mathcal{T}_{m}(v)\) yields a larger-scale token, approaching broader context as \(m\) increases.</li> 
+    <li><strong>\(\ell=m\):</strong> \(\mathcal{T}_{m}(v)\) yields a larger-scale token that approaches broader context as \(m\) increases.</li> 
   </ul> 
   <p> 
     The resulting token family \(\{\mathcal{T}_{\ell}(v)\}_{\ell=0}^{m}\) forms an ordered multi-resolution description of the local environment of \(v\). 
@@ -195,7 +190,7 @@ toc: false
 <section class="article-width" id="step2">
 <h2>Encoding Subgraphs with Local Encoders</h2>
 <p class="section-intro">
-            Now that we have tokens (subgraphs), the next objective is to convert each token into a latent vector representation. This transformation is governed by the local encoder \(\varphi(\cdot)\). </p>
+            Now that we have tokens (subgraphs), the next objective is to convert each token into a latent vector representation. This transformation is done by the local encoder \(\varphi(\cdot)\). </p>
 <p>
             Each snapshot \(\mathcal{T}_{\ell}(v)\) remains a graph structure consisting of a subset of vertices, induced edges, and associated node features. To integrate this structure into the sequence model, we must project the entire subgraph into a single embedding vector \(\mathbf{x}_{\ell}(v) \in \mathbb{R}^{d}\). 
         </p>
@@ -295,7 +290,7 @@ toc: false
 <section class="article-width" id="step3">
 <h2>The Mamba Block: Selective State Spaces</h2>
 <p class="section-intro">
-          Having mapped the tokens into a sequence of latent representations, the next challenge is to model the dependencies within this sequence efficiently. To this end, we employ the Mamba architecture, which leverages selective state space models (SSMs) to achieve linear computational complexity with respect to sequence length, avoiding the quadratic bottleneck of standard attention mechanisms. 
+          Having mapped the tokens into a sequence of latent representations, the next challenge is to model the dependencies within this sequence efficiently. To this end, we employ the Mamba architecture, which leverages selective state space models (SSMs) to achieve linear computational complexity with respect to sequence length, unlike attention mechanisms with quadratic computational complexity.
         </p>
 <h3>From Tokens to Sequences</h3>
 <p>
@@ -304,7 +299,7 @@ toc: false
             <li>\(K = s(m+1)\), corresponding to the product of the number of samples \(s\) and the maximum walk length \(m\).</li> 
             <li>\(d\) denotes the dimensionality of the latent feature space.</li> 
           </ul>
-          <p> The matrix \(\mathbf{X}(v)\) serves as the input sequence for the Mamba block. Each row \(\mathbf{x}_{k}(v)\) constitutes a single <strong>token</strong>, encapsulating the structural information of a specific subgraph snapshot generated at a particular random walk scale.
+          <p> The matrix \(\mathbf{X}(v)\) serves as the input sequence for the Mamba block. Each row \(\mathbf{x}_{k}(v)\) constitutes a single <strong>token</strong> that represents the structural information of a specific subgraph from a random walk.
         </p>
 <h3>Token Ordering</h3>
 <p>
@@ -325,7 +320,7 @@ toc: false
 </div>
 <h3>Why Mamba?</h3> 
 <p> Standard Graph Neural Networks (GNNs) rely on iterative <strong>message passing</strong>, where the receptive field grows only linearly with network depth. To capture long-range dependencies, these networks must stack many layers, leading to the well-known pathologies of <strong>over-smoothing</strong> (feature convergence) and <strong>over-squashing</strong> (information bottlenecks). </p> 
-<p> <strong>Mamba</strong> provides a fundamental alternative by treating graph structures as sequences. Leveraging <strong>Selective State Space Models (SSMs)</strong>, it compresses the context of an arbitrary-length token sequence into a recurrent hidden state. This allows the model to reason over global graph structures efficiently with \(O(N)\) complexity, bypassing the depth-limitations of local aggregation. </p> 
+<p> <strong>Mamba</strong> provides a fundamental alternative by treating graph structures as sequences. <strong>Selective State Space Models (SSMs)</strong> compress the context of an arbitrary-length token sequence into a recurrent hidden state. This allows the model to reason over global graph structures efficiently with \(O(N)\) complexity. </p> 
 <div class="comparison-section">
 <table> 
 <thead> <tr> <th>Property</th> <th>Traditional GNN (MPNN)</th> <th>Graph Mamba</th> </tr> </thead> <tbody> <tr> <td>
@@ -335,7 +330,7 @@ toc: false
 <strong>Information Flow</strong></td> <td>Bottlenecked by graph topology</td> <td>Direct access via selective state</td> </tr> </tbody> </table> </div>
 
 <h3>The Core Mechanism</h3>
- <p> As the model processes the sequence of structural tokens \(\mathbf{x}_1, \dots, \mathbf{x}_K\), the Mamba block maintains a compressed representation of the context via a <strong>hidden state</strong>. Formally, this process is governed by a discretized state space equation: </p> 
+ <p> As the model processes the sequence of structural tokens \(\mathbf{x}_1, \dots, \mathbf{x}_K\), the Mamba block maintains a compressed representation of the context via a <strong>hidden state</strong>. Formally, this process is defined by a discretized state space equation: </p> 
  <div class="formula-box"> 
  <p>The latent state evolves according to the linear recurrence:</p> 
  \[ \mathbf{h}_t \;=\; \bar{\mathbf{A}}_t \mathbf{h}_{t-1} \,+\, \bar{\mathbf{B}}_t \mathbf{x}_t \] <p><strong>Definitions:</strong></p> 
@@ -347,7 +342,7 @@ toc: false
 </ul> 
 </div>
 <h3>The Selective Mechanism</h3>
-<p> In classical State Space Models (SSMs), the parameters \(\mathbf{A}\) and \(\mathbf{B}\) are static, independent of the input sequence. Mamba diverges from this by making the transition dynamics <strong>input-dependent</strong>, allowing for selective information processing. </p>
+<p> In classical State Space Models (SSMs), the parameters \(\mathbf{A}\) and \(\mathbf{B}\) are static, independent of the input sequence. Mamba diverges from this by making the transition dynamics <strong>input-dependent</strong>. </p>
 <p> Central to this mechanism is the <strong>timescale parameter</strong> \(\Delta_t\), which acts as a gating factor derived from the current input \(\mathbf{x}_t\): </p> 
 <div class="formula-box"> <p> 
   \[ \Delta_t \;=\; \mathrm{Softplus}(\mathbf{W}_{\Delta} \mathbf{x}_t) \] </p> 
@@ -359,9 +354,6 @@ toc: false
   <li><strong>High \(\Delta_t\) (Focus):</strong> Corresponds to a larger step size, allowing the current token \(\mathbf{x}_t\) to significantly update the state \(\mathbf{h}_t\) and reset the memory.</li>
   <li><strong>Low \(\Delta_t\) (Ignore):</strong> Corresponds to a small step size, causing the state to persist unchanged, effectively filtering out irrelevant or noisy tokens.</li> 
 </ul> 
-
-<div class="key-takeaway"> <strong>Key Mechanism:</strong> The input-dependent gate \(\Delta_t\) dynamically controls the "resolution" of the state update. This allows Mamba to selectively compress relevant structural context into the hidden state while ignoring redundant information in the random walk sequence. </div>
-
 
 <details>
 <summary><strong>Python code:</strong> Selective State Space block</summary>
@@ -431,7 +423,7 @@ toc: false
 </section>
 <section class="article-width" id="step4">
 <h2>Bidirectional Sequence Modeling</h2> 
-<p class="section-intro"> Unlike natural language sequences which follow a canonical temporal order, graph random walks are stochastic traversals lacking inherent directionality. Processing such sequences exclusively in a forward manner imposes an arbitrary causal bias. Graph Mamba mitigates this by employing a bidirectional architecture. </p> 
+<p class="section-intro"> Unlike natural language sequences which follow a canonical temporal order, graph random walks are stochastic traversals lacking inherent directionality. Processing such sequences exclusively in a forward manner imposes some causal bias. Graph Mamba mitigates this possible bias by using a bidirectional architecture. </p> 
 <h3>The Bi-Mamba Architecture</h3> 
 <p> Standard State Space Models are causal: the hidden state \(\mathbf{h}_t\) depends solely on the history \(\mathbf{x}_{1 \dots t}\). However, for structural representation learning, a token should be informed by the entire context of the neighborhood snapshot, regardless of its position in the sampled sequence. </p> 
 <p> To achieve this, the <strong>Bidirectional Mamba</strong> block processes the input token sequence \(\mathbf{X}(v)\) using two independent SSM heads operating in opposite directions: </p>
