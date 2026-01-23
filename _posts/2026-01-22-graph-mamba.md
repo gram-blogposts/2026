@@ -65,17 +65,22 @@ toc: false
 <h3>What is a Graph?</h3>
 <p>
             A <strong>graph</strong> is a data structure with <strong>nodes</strong> (entities) and 
-            <strong>edges</strong> (relationships). Think of it like a social network: people are nodes, 
-            friendships are edges.
+            <strong>edges</strong> (relationships) connecting these nodes.
         </p>
 <p>
-            Graph Neural Networks (GNNs) are the standard for learning on graph-structured data. 
-            However, traditional Message Passing Neural Networks (MPNNs) often struggle with 
-            <strong>long-range dependencies</strong> and computational efficiency on large graphs.
+            Graph Neural Networks (GNNs) are the standard for learning on graph-structured data. Most Graph Neural Networks operate via <strong>message passing</strong>: at each layer, every node
+            updates its representation by aggregating information from its immediate neighbors. One layer reaches only one-hop neighbors, two layers reach two hops, and so on.
         </p>
+<p>
+            This makes deep networks necessary for long-range reasoning: to connect far-apart nodes, the model often needs many layers. But stacking many message-passing layers has well-known side effects: node representations become increasingly similar (<strong>over-smoothing</strong>), and information from many distant nodes gets compressed into a limited-size embedding (<strong>over-squashing</strong>).
+        </p>
+<p>
+            There is also a practical cost: each layer typically requires iterating over edges to aggregate messages, so deeper models mean more passes over the graph and higher memory/compute. This is especially painful for large, dense, or high-degree graphs.
+        </p>
+
 <div class="key-takeaway">
 <strong>Key Challenge:</strong> Traditional GNNs require many layers to capture long-range dependencies, 
-            leading to over-smoothing and high computational costs.
+            leading to over-smoothing, over-squashing and high computational costs.
         </div>
 
 <details>
@@ -109,34 +114,23 @@ toc: false
 <h2>From Random Walks to Tokens</h2>
 <p class="section-intro">
             The first innovation in Graph Mamba is how we sample and represent graph neighborhoods. 
-            Instead of fixed-radius neighbors, we use random walks to create multi-scale "snapshots" of the graph.
+            Instead of fixed-radius neighbors, we use random walks to create multi-scale <strong>snapshots</strong> of the graph.
         </p>
 <p>
-            For each center node <em>v</em> we want a list of small neighbourhood snapshots, called <strong>tokens</strong>. 
-            We fix a maximum walk length <strong>m</strong>. For every length ℓ = 0, 1, …, m we launch <strong>M</strong> random walks 
-            starting from v and collect all nodes that are visited at least once. The union of these visited nodes forms a subgraph 
-            G[T<sub>ℓ</sub>(v)] – this subgraph is one token for length ℓ.
+            Fix a graph \(G=(V,E)\) and a center node \(v\in V\). Choose a maximum walk length \(m\in\mathbb{N}\) and a number of walks \(M\in\mathbb{N}\). For each length \(\ell\in\{0,1,\dots,m\}\), we sample \(M\) random walks of length \(\ell\) starting from \(v\). Let \[ T_{\ell}(v)\subseteq V \] denote the set of all vertices visited at least once by these walks (including \(v\)). The \(\ell\)-th <strong>structural snapshot</strong> is defined as the induced subgraph \[ \mathcal{T}_{\ell}(v)\;:=\;G\big[T_{\ell}(v)\big], \] which provides a stochastic, multi-scale view of the neighborhood of \(v\). (Later, this snapshot will serve as an input token). 
         </p>
-<div class="info-box">
-<p><strong>Intuition:</strong> Imagine you're exploring a city</p>
-<ul>
-<li><strong>ℓ = 0:</strong> You stay at the starting point (just the center node)</li>
-<li><strong>ℓ = 1:</strong> You walk one block in random directions (immediate neighbors)</li>
-<li><strong>ℓ = 2:</strong> You walk two blocks (2-hop neighbors)</li>
-<li><strong>ℓ = m:</strong> You explore the entire neighborhood</li>
-</ul>
-<p>
-                Each "snapshot" at distance ℓ becomes a <strong>token</strong>. By processing tokens from different distances, 
-                the model learns which neighborhood scales matter most.
-            </p>
-</div>
-<p>
-            A local encoder ϕ(·) later turns each subgraph token into a d-dimensional vector. If we have one token per length ℓ, 
-            the resulting "token matrix" for node v has shape (m+1) × d. In the full GMN recipe this sampling can be repeated 
-            <strong>s</strong> times, giving K = (m+1)·s token vectors per node, which are then flattened into a K × d sequence 
-            for the Mamba block.
-        </p>
-
+<div class="info-box"> 
+  <p>
+    <strong>Interpretation (multi-scale view):</strong>
+  </p>
+  <ul> 
+    <li><strong>\(\ell=0\):</strong> \(\mathcal{T}_{0}(v)\) contains only the center vertex \(v\).</li> <li><strong>\(\ell=1\):</strong> \(\mathcal{T}_{1}(v)\) typically captures a subset of the 1-hop neighborhood of \(v\).</li>
+    <li><strong>\(\ell=2\):</strong> \(\mathcal{T}_{2}(v)\) expands toward 2-hop structure, with coverage determined by the random-walk samples.</li> 
+    <li><strong>\(\ell=m\):</strong> \(\mathcal{T}_{m}(v)\) yields a larger-scale token, approaching broader context as \(m\) increases.</li> 
+  </ul> 
+  <p> 
+    The resulting token family \(\{\mathcal{T}_{\ell}(v)\}_{\ell=0}^{m}\) forms an ordered multi-resolution description of the local environment of \(v\). 
+  </p> </div>
 <details>
 <summary><strong>Python code:</strong> Neighborhood sampling (random walk tokenization)</summary>
 
@@ -201,29 +195,21 @@ toc: false
 <section class="article-width" id="step2">
 <h2>Encoding Subgraphs with Local Encoders</h2>
 <p class="section-intro">
-            Now that we have tokens (subgraphs), we need to convert each one into a fixed-size vector. 
-            This is where the local encoder ϕ(·) comes in.
+            Now that we have tokens (subgraphs), the next objective is to convert each token into a latent vector representation. This transformation is governed by the local encoder \(\varphi(\cdot)\). </p>
+<p>
+            Each snapshot \(\mathcal{T}_{\ell}(v)\) remains a graph structure consisting of a subset of vertices, induced edges, and associated node features. To integrate this structure into the sequence model, we must project the entire subgraph into a single embedding vector \(\mathbf{x}_{\ell}(v) \in \mathbb{R}^{d}\). 
         </p>
 <p>
-            Each blue "cloud" is still a graph: it has several nodes, edges, and node features. 
-            To feed it into the sequence model, we compress this whole subgraph into a single vector — 
-            a <strong>token embedding</strong> of size d.
-        </p>
+          The Graph Mamba Network employs a parameterised local encoder \(\varphi: \mathcal{G} \to \mathbb{R}^{d}\) for this aggregation. In practice, \(\varphi(\cdot)\) may be implemented using various graph neural network architectures: 
+        </p> 
+        <ul> 
+          <li><strong>GCN (Graph Convolutional Network):</strong> A stack of spectral convolution layers operating on the subgraph adjacency.</li> 
+          <li><strong>GraphSAGE:</strong> An inductive framework aggregating feature information from sampled neighborhoods.</li> 
+          <li><strong>GAT (Graph Attention Network):</strong> A mechanism computing attention coefficients to weight neighbor contributions.</li> 
+          <li><strong>Mean Pooling:</strong> A baseline approach computing the centroid of node features within the subgraph.</li> 
+        </ul>
 <p>
-            Graph Mamba Networks use a small <em>local encoder</em> ϕ(·) for this step. 
-            In practice ϕ(·) can be implemented in several ways:
-        </p>
-<ul>
-<li><strong>GCN (Graph Convolutional Network):</strong> 2-3 layers of graph convolutions</li>
-<li><strong>GraphSAGE:</strong> Sample and aggregate neighborhood features</li>
-<li><strong>GAT (Graph Attention):</strong> Learn attention weights between nodes</li>
-<li><strong>Simple pooling:</strong> Just average all node features (baseline)</li>
-</ul>
-<p>
-            Regardless of the chosen encoder, the output is always a d-dimensional vector 
-            ϕ(G[T<sub>ℓ</sub>(v)], X<sub>T<sub>ℓ</sub>(v)</sub>), which becomes one row in the K × d token matrix 
-            for node v. Later, the Bidirectional Mamba block will read this matrix as a sequence of tokens and learn 
-            which subgraphs are most informative.
+            Irrespective of the specific architecture, the encoder processes the structural snapshot \(\mathcal{T}_{\ell}(v)\) and its corresponding feature matrix \(\mathbf{X}_{\mathcal{T}_{\ell}(v)}\) to yield a \(d\)-dimensional representation: \[ \mathbf{x}_{\ell}(v) \;=\; \varphi\Big( \mathcal{T}_{\ell}(v), \, \mathbf{X}_{\mathcal{T}_{\ell}(v)} \Big). \] This vector forms the \(\ell\)-th row of the token matrix \(\mathbf{X}(v) \in \mathbb{R}^{K \times d}\), where \(K\) denotes the total number of tokens per node. Specifically, if the sampling procedure is repeated \(s\) times for each of the \(m+1\) scales, the sequence length is given by \(K = s(m+1)\). The subsequent Bidirectional Mamba block then ingests this matrix as a sequence, learning dependencies across the multi-scale snapshots. 
         </p>
 
 <details>
@@ -284,182 +270,98 @@ toc: false
 </details>
 <h3>GCN Encoder: Three Phases</h3>
 <p>
-            So far we treated the local encoder ϕ(·) as a black box that turns a subgraph token G[T<sub>ℓ</sub>(v)] into a 
-            d-dimensional vector. Here we open this box for a simple 2-layer GCN encoder and look at the actual tensors that 
-            flow through the network for one token.
-        </p>
-<div class="info-box">
-<p><strong>GCN Processing Steps:</strong></p>
-<ol>
-<li><strong>Define the graph structure (A) and node features (X)</strong></li>
-<li><strong>Apply linear transform to the features, aggregate neighbors, apply ReLU</strong></li>
-<li><strong>Second layer of aggregation, then pool all nodes into one vector</strong></li>
-</ol>
+            Previously, we modeled the local encoder \(\varphi(\cdot)\) as an abstract operator mapping a structural snapshot \(\mathcal{T}_{\ell}(v)\) to a latent vector \(\mathbf{x}_{\ell}(v) \in \mathbb{R}^{d}\). In this section, we explain the internal mechanism of \(\varphi(\cdot)\) by instantiating it as a two-layer Graph Convolutional Network (GCN). 
+        </p> 
+<p> 
+            Let us briefly overview the GCN propagation rule. A standard GCN layer updates node representations by aggregating features from immediate neighbors, normalized by the degree of the involved nodes. Formally, the \(k\)-th layer update is given by \(\mathbf{H}^{(k)} = \sigma(\hat{\mathbf{D}}^{-1/2}\hat{\mathbf{A}}\hat{\mathbf{D}}^{-1/2} \mathbf{H}^{(k-1)} \mathbf{W}^{(k-1)})\), where \(\hat{\mathbf{A}} = \mathbf{A} + \mathbf{I}\) represents the adjacency matrix with added self-loops, \(\hat{\mathbf{D}}\) is the diagonal degree matrix with entries \(\hat{\mathbf{D}}_{ii} = \sum_{j} \hat{\mathbf{A}}_{ij}\),   \(\mathbf{W}\) is a learnable weight matrix, and \(\sigma\) denotes a non-linear activation function. We apply this logic to process the induced subgraph of each token. 
+        </p> 
+<div class="info-box"> 
+  <p> 
+        <strong>Computational Phases:</strong>
+      </p> 
+        <ol>
+          <li><strong>Structural Definition:</strong> Construct the subgraph adjacency matrix \(\mathbf{A}_{\ell} \in \{0,1\}^{N_\ell \times N_\ell}\) and the associated feature matrix \(\mathbf{H}^{(0)} \in \mathbb{R}^{N_\ell \times F}\), where \(N_\ell = |T_{\ell}(v)|\).</li> 
+          <li><strong>Layer I (Message Passing):</strong> Perform a linear transformation followed by neighborhood aggregation and non-linear activation: \[ \mathbf{H}^{(1)} = \sigma\left( \hat{\mathbf{D}}^{-1/2} \hat{\mathbf{A}}_{\ell} \hat{\mathbf{D}}^{-1/2} \mathbf{H}^{(0)} \mathbf{W}^{(0)} \right). \] </li>
+          <li><strong>Layer II & Pooling:</strong> Apply a second convolution step to obtain \(\mathbf{H}^{(2)}\), followed by a readout function (e.g., mean pooling) to compress the node set into a single token embedding \(\mathbf{x}_{\ell}(v)\).</li> 
+        </ol> 
 </div>
 <div class="interactive-figure" style="min-height: 600px; background: #020617; border: 1px solid #1f2937; position: relative; width: 160%; margin-left: -30%; margin-top: 1.5rem; margin-bottom: 1.5rem; overflow: hidden; color: #e8e6e3;">
 <div id="gcn-local-viz" style="position: relative; width: 100%; height: 750px;"></div>
 </div>
 <div class="figure-caption">
-<strong>Visualization:</strong> This shows how a 2-layer GCN local encoder ϕ(·) processes a single token subgraph. 
-            On the left you see the token subgraph around a node v. On the right you can inspect, step by step, 
-            the tensors A, X, X1, AX1, H1, X2, AX2, H2, and the pooled vector z that becomes the token embedding.
+<strong>Visualization:</strong> This interactive figure demonstrates the internal mechanics of a two-layer GCN local encoder \(\varphi(\cdot)\) processing a single token. On the left, the induced subgraph \(\mathcal{T}_{\ell}(v)\) is displayed. The panel on the right allows you to trace the sequential tensor transformations: from the adjacency structure \(\mathbf{A}_{\ell}\) and initial features \(\mathbf{H}^{(0)}\), through the intermediate hidden states \(\mathbf{H}^{(1)}\) and \(\mathbf{H}^{(2)}\), to the final pooled token embedding \(\mathbf{x}_{\ell}(v)\).
         </div>
 </section>
 <section class="article-width" id="step3">
 <h2>The Mamba Block: Selective State Spaces</h2>
 <p class="section-intro">
-            After encoding subgraphs into tokens, we need a way to process these token sequences efficiently. 
-            This is where Mamba shines — offering linear complexity instead of quadratic attention.
+          Having mapped the tokens into a sequence of latent representations, the next challenge is to model the dependencies within this sequence efficiently. To this end, we employ the Mamba architecture, which leverages selective state space models (SSMs) to achieve linear computational complexity with respect to sequence length, avoiding the quadratic bottleneck of standard attention mechanisms. 
         </p>
 <h3>From Tokens to Sequences</h3>
 <p>
-            After the local encoder processes each subgraph, every node <em>v</em> has <strong>K token vectors</strong> of dimension <em>d</em>. 
-            These K vectors are stacked into a matrix of shape <strong>K × d</strong>, where:
-        </p>
-<ul>
-<li>K = (m+1) × s = (walk lengths × number of samples)</li>
-<li>d = embedding dimension</li>
-</ul>
-<p>
-            This K × d matrix is the <em>sequence</em> that Mamba processes. Each row is one token, 
-            representing a subgraph at a certain walk length.
+          Following the local encoding phase, the multiscale environment of each node \(v\) is represented by a set of \(K\) embeddings, derived from the structural snapshots \(\{\mathcal{T}_{\ell}(v)\}\). These embeddings are organized into a matrix \(\mathbf{X}(v) \in \mathbb{R}^{K \times d}\), where: </p> 
+          <ul> 
+            <li>\(K = s(m+1)\), corresponding to the product of the number of samples \(s\) and the maximum walk length \(m\).</li> 
+            <li>\(d\) denotes the dimensionality of the latent feature space.</li> 
+          </ul>
+          <p> The matrix \(\mathbf{X}(v)\) serves as the input sequence for the Mamba block. Each row \(\mathbf{x}_{k}(v)\) constitutes a single <strong>token</strong>, encapsulating the structural information of a specific subgraph snapshot generated at a particular random walk scale.
         </p>
 <h3>Token Ordering</h3>
 <p>
-            Unlike Transformers, which are permutation-equivariant (they don't care about token order), 
-            Mamba is a <strong>sequential encoder</strong> — it processes tokens one by one, 
-            and earlier tokens influence later ones through the hidden state. 
-            This means the <em>order of tokens matters</em>.
+            Unlike permutation-equivariant Transformers, the Mamba architecture is inherently sequential; the state update at step \(t\) depends strictly on the previous states \(1, \dots, t-1\). Consequently, the ordering of the token sequence \(\mathbf{X}(v)\) is structurally significant. 
         </p>
 <div class="info-box">
-<h4>How are tokens ordered?</h4>
-<p>
-<strong>When m ≥ 1 (subgraph tokenization):</strong> tokens have an <em>implicit hierarchical order</em>. 
-                The i-th token (i-hop neighborhood) is a subgraph of all j-hop neighborhoods where j ≥ i. 
-                GMN uses <strong>reverse order</strong>: from outer neighborhoods (m-hop) to inner ones (1-hop, then 0-hop = node itself).
-            </p>
-<p>
-                This way, when the model reaches the node's own embedding (last token), it already has context 
-                about the entire neighborhood structure — from global to local.
-            </p>
-<p>
-<strong>When s ≥ 2:</strong> tokens with the same walk length ℓ are <em>randomly shuffled</em> among themselves 
-                to make the model robust to their permutation.
-            </p>
-<p>
-<strong>When m = 0 (node tokenization):</strong> there's no implicit order, so nodes are sorted by 
-                structural properties like <em>Personalized PageRank</em> or <em>degree</em>. 
-                Domain knowledge can also be used when available.
-            </p>
+<h4>Ordering Protocol</h4> 
+<p> <strong>Hierarchical Structure (\(m \ge 1\)):</strong> Subgraph tokens possess an inherent inclusion hierarchy. GMN adopts a <strong>reverse</strong> ordering: the sequence begins with the largest scale snapshots (\(\ell=m\)) and progresses inward to the local node features (\(\ell=0\)). This ensures that the final state update, corresponding to the node itself, is conditioned on the full multi-scale context. </p> 
+<p> <strong>Stochastic Permutation (\(s \ge 2\)):</strong> Within any fixed scale \(\ell\), the \(s\) independent samples are randomly permuted to induce invariance to the sampling order. </p> 
+<p> <strong>Node Tokenization (\(m=0\)):</strong> In the absence of hierarchical structure, tokens are ordered by global topological metrics (e.g., Personalized PageRank or degree centrality) to provide a canonical sequence. </p>
 </div>
-<p>
-    The final token sequence for a node v looks like this (processed in this exact order):
-</p>
-<div class="formula-box">
-<strong>Step 1:</strong> x<sup>s</sup><sub>v,m</sub> — s tokens from <em>m-hop</em> neighborhoods (farthest)<br/>
-<strong>Step 2:</strong> x<sup>s</sup><sub>v,m-1</sub> — s tokens from <em>(m-1)-hop</em> neighborhoods<br/>
-<span>...</span><br/>
-<strong>Step m:</strong> x<sup>s</sup><sub>v,1</sub> — s tokens from <em>1-hop</em> neighborhoods (direct neighbors)<br/>
-<strong>Final:</strong> x<sup>s</sup><sub>v,0</sub> — s tokens from <em>0-hop</em> (node v itself)
-      <ul>
-<li><strong>x<sup>s</sup><sub>v,ℓ</sub></strong> = <em>s</em> token vectors for node <em>v</em> at walk length <em>ℓ</em></li>
-<li>Within each group of <em>s</em> tokens at the same <em>ℓ</em>, order is <strong>randomly shuffled</strong></li>
-</ul>
+  <p> The resulting input sequence for a node \(v\) is constructed as follows: </p> 
+  <div class="formula-box"> \[ \mathbf{X}(v) = \Big[ \underbrace{\mathbf{x}^{(1)}_{m}, \dots, \mathbf{x}^{(s)}_{m}}_{\text{Scale } m \text{ (Global)}}, \dots, \underbrace{\mathbf{x}^{(1)}_{1}, \dots, \mathbf{x}^{(s)}_{1}}_{\text{Scale } 1 \text{ (Local)}}, \underbrace{\mathbf{x}^{(1)}_{0}, \dots, \mathbf{x}^{(s)}_{0}}_{\text{Scale } 0 \text{ (Node)}} \Big] \] 
+  <ul> 
+    <li>Tokens are processed from global context (\(\ell=m\)) to local identity (\(\ell=0\)).</li>
+    <li>Within each block of scale \(\ell\), the \(s\) samples are randomly shuffled.</li> 
+  </ul> 
 </div>
-<h3>Why Mamba?</h3>
-<p>
-            Traditional Transformers use <strong>self-attention</strong> with \(O(N^2)\) complexity, 
-            where every token attends to every other token. For long sequences (like graph random walks), 
-            this becomes computationally expensive and memory-intensive.
-        </p>
-<p>
-<strong>Mamba</strong> offers a different approach: a <strong>Selective State Space Model (SSM)</strong> 
-            with \(O(N)\) complexity. Instead of attention, Mamba maintains a <em>hidden state</em> that evolves 
-            recurrently as it processes each token.
-        </p>
+<h3>Why Mamba?</h3> 
+<p> Standard Graph Neural Networks (GNNs) rely on iterative <strong>message passing</strong>, where the receptive field grows only linearly with network depth. To capture long-range dependencies, these networks must stack many layers, leading to the well-known pathologies of <strong>over-smoothing</strong> (feature convergence) and <strong>over-squashing</strong> (information bottlenecks). </p> 
+<p> <strong>Mamba</strong> provides a fundamental alternative by treating graph structures as sequences. Leveraging <strong>Selective State Space Models (SSMs)</strong>, it compresses the context of an arbitrary-length token sequence into a recurrent hidden state. This allows the model to reason over global graph structures efficiently with \(O(N)\) complexity, bypassing the depth-limitations of local aggregation. </p> 
 <div class="comparison-section">
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Transformer</th>
-<th>Mamba</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Complexity</strong></td>
-<td>\(O(N^2)\)</td>
-<td>\(O(N)\)</td>
-</tr>
-<tr>
-<td><strong>Memory Usage</strong></td>
-<td>High (stores attention matrix)</td>
-<td>Low (only hidden state)</td>
-</tr>
-<tr>
-<td><strong>Long Sequences</strong></td>
-<td>Struggles</td>
-<td>Efficient</td>
-</tr>
-<tr>
-<td><strong>Selective Filtering</strong></td>
-<td>No</td>
-<td>Yes (Delta)</td>
-</tr>
-</tbody>
-</table>
-</div>
+<table> 
+<thead> <tr> <th>Property</th> <th>Traditional GNN (MPNN)</th> <th>Graph Mamba</th> </tr> </thead> <tbody> <tr> <td>
+<strong>Context Mechanism</strong></td> <td>Local Aggregation (1-hop per layer)</td> <td>Recurrent State (Infinite horizon)</td> </tr> <tr> <td>
+<strong>Long-Range Dependencies</strong></td> <td>Requires deep stacking (High cost)</td> <td>Native support via sequence memory</td> </tr> <tr> <td>
+<strong>Complexity</strong></td> <td>\(O(|E|)\) (Edges matter most)</td> <td>\(O(K)\) (Sequence length matters most)</td> </tr> <tr> <td>
+<strong>Information Flow</strong></td> <td>Bottlenecked by graph topology</td> <td>Direct access via selective state</td> </tr> </tbody> </table> </div>
+
 <h3>The Core Mechanism</h3>
-<p>
-            As you read through tokens (subgraphs at different distances), Mamba maintains a 
-            <strong>running summary</strong> called the "hidden state":
-        </p>
-<div class="formula-box">
-<p>The Mamba block updates its hidden state using this equation:</p>
-<p>
-                \[ h_t = \bar{A} h_{t-1} + \bar{B} x_t \]
-            </p>
-<p><strong>Where:</strong></p>
-<ul>
-<li>\(h_t\) = hidden state at step t</li>
-<li>\(x_t\) = current input token</li>
-<li>\(\bar{A}\) = state transition matrix (how much to remember)</li>
-<li>\(\bar{B}\) = input projection matrix (how much new info to add)</li>
-</ul>
+ <p> As the model processes the sequence of structural tokens \(\mathbf{x}_1, \dots, \mathbf{x}_K\), the Mamba block maintains a compressed representation of the context via a <strong>hidden state</strong>. Formally, this process is governed by a discretized state space equation: </p> 
+ <div class="formula-box"> 
+ <p>The latent state evolves according to the linear recurrence:</p> 
+ \[ \mathbf{h}_t \;=\; \bar{\mathbf{A}}_t \mathbf{h}_{t-1} \,+\, \bar{\mathbf{B}}_t \mathbf{x}_t \] <p><strong>Definitions:</strong></p> 
+ <ul> 
+  <li>\(\mathbf{h}_t \in \mathbb{R}^{N}\): The hidden state at step \(t\), serving as the sequence memory.</li> 
+  <li>\(\mathbf{x}_t \in \mathbb{R}^{d}\): The input token corresponding to the \(t\)-th structural snapshot.</li> 
+  <li>\(\bar{\mathbf{A}}_t\): The state transition matrix (determining information retention).</li> 
+  <li>\(\bar{\mathbf{B}}_t\): The input projection matrix (determining information update).</li> 
+</ul> 
 </div>
 <h3>The Selective Mechanism</h3>
-<p>
-            This is similar to an RNN, but in standard state space models, <strong>A and B are fixed parameters</strong> — 
-            they don't change based on the input.
-        </p>
-<p>
-            Here's the key innovation: <strong>Mamba makes A and B input-dependent</strong> through a gating parameter 
-            <strong>\(\Delta_t\)</strong> (delta).
-        </p>
-<p>
-            For each token \(x_t\), the model computes:
-        </p>
-<div class="formula-box">
-<p>
-                \[ \Delta_t = \text{Softplus}(W_\Delta x_t) \]
-            </p>
-<p>Then it modulates the fixed A and computes effective parameters:</p>
-<p>
-                \[ \bar{A} = \exp(\Delta_t \cdot A), \quad \bar{B} = \Delta_t \cdot B \]
-            </p>
-</div>
-<p>
-            This allows the model to:
-        </p>
-<ul>
-<li><strong>Expand the gate (Δ large):</strong> Let important tokens influence the hidden state strongly</li>
-<li><strong>Contract the gate (Δ small):</strong> Filter out noisy or irrelevant tokens</li>
-</ul>
-<div class="key-takeaway">
-<strong>Key Innovation:</strong> The selective gate Δ decides how much to update the summary based on 
-            the current token's importance. This enables Mamba to focus on relevant information while filtering noise.
-        </div>
+<p> In classical State Space Models (SSMs), the parameters \(\mathbf{A}\) and \(\mathbf{B}\) are static, independent of the input sequence. Mamba diverges from this by making the transition dynamics <strong>input-dependent</strong>, allowing for selective information processing. </p>
+<p> Central to this mechanism is the <strong>timescale parameter</strong> \(\Delta_t\), which acts as a gating factor derived from the current input \(\mathbf{x}_t\): </p> 
+<div class="formula-box"> <p> 
+  \[ \Delta_t \;=\; \mathrm{Softplus}(\mathbf{W}_{\Delta} \mathbf{x}_t) \] </p> 
+  <p>This parameter modulates the system parameters \((\mathbf{A}, \mathbf{B})\):</p> 
+  <p> \[ \bar{\mathbf{A}}_t \;=\; \exp(\Delta_t \cdot \mathbf{A}), \qquad \bar{\mathbf{B}}_t \;=\; \Delta_t \cdot \mathbf{B} \] </p> 
+  </div>
+<p> This empowers the model with a <strong>selective mechanism</strong>: </p> 
+<ul> 
+  <li><strong>High \(\Delta_t\) (Focus):</strong> Corresponds to a larger step size, allowing the current token \(\mathbf{x}_t\) to significantly update the state \(\mathbf{h}_t\) and reset the memory.</li>
+  <li><strong>Low \(\Delta_t\) (Ignore):</strong> Corresponds to a small step size, causing the state to persist unchanged, effectively filtering out irrelevant or noisy tokens.</li> 
+</ul> 
+
+<div class="key-takeaway"> <strong>Key Mechanism:</strong> The input-dependent gate \(\Delta_t\) dynamically controls the "resolution" of the state update. This allows Mamba to selectively compress relevant structural context into the hidden state while ignoring redundant information in the random walk sequence. </div>
+
 
 <details>
 <summary><strong>Python code:</strong> Selective State Space block</summary>
@@ -528,19 +430,16 @@ toc: false
         </div>
 </section>
 <section class="article-width" id="step4">
-<h2>Bidirectional Processing</h2>
-<p class="section-intro">
-            Random walks have no inherent direction like sentences. Processing them only left-to-right would introduce bias. 
-            Graph Mamba solves this with bidirectional processing at two levels.
-        </p>
-<h3>Why Bidirectional?</h3>
-<p>
-            A random walk has no inherent "direction" like a sentence. If we only process it left-to-right, we bias the model.
-        </p>
-<p>
-            To fix this, we implement <strong>Bidirectional Mamba</strong>. Watch how two SSM blocks process the same sequence in 
-            <strong>opposite directions</strong>, then combine their outputs. This ensures each token "sees" context from both sides.
-        </p>
+<h2>Bidirectional Sequence Modeling</h2> 
+<p class="section-intro"> Unlike natural language sequences which follow a canonical temporal order, graph random walks are stochastic traversals lacking inherent directionality. Processing such sequences exclusively in a forward manner imposes an arbitrary causal bias. Graph Mamba mitigates this by employing a bidirectional architecture. </p> 
+<h3>The Bi-Mamba Architecture</h3> 
+<p> Standard State Space Models are causal: the hidden state \(\mathbf{h}_t\) depends solely on the history \(\mathbf{x}_{1 \dots t}\). However, for structural representation learning, a token should be informed by the entire context of the neighborhood snapshot, regardless of its position in the sampled sequence. </p> 
+<p> To achieve this, the <strong>Bidirectional Mamba</strong> block processes the input token sequence \(\mathbf{X}(v)\) using two independent SSM heads operating in opposite directions: </p>
+<ul> 
+  <li><strong>Forward Pass:</strong> Processes the sequence from \(t=1\) to \(K\), capturing context from the start of the walk.</li> 
+  <li><strong>Backward Pass:</strong> Processes the sequence from \(t=K\) to \(1\), capturing context from the end of the walk.</li> 
+</ul> 
+<p> Mathematically, for each time step \(t\), the model computes two distinct states which are subsequently fused (e.g., via concatenation or element-wise addition) to form the final position-aware embedding: \[ \mathbf{z}_t \;=\; \text{Fuse}\big(\, \overrightarrow{\text{SSM}}(\mathbf{x}_t), \; \overleftarrow{\text{SSM}}(\mathbf{x}_t) \,\big). \] This mechanism ensures that every token \(\mathbf{x}_t\) integrates information from both its predecessors and successors in the sequence. </p>
 
 <details>
 <summary><strong>Python code:</strong> Bidirectional Mamba</summary>
@@ -590,48 +489,25 @@ toc: false
 <strong>Figure:</strong> Bidirectional Mamba processes the same token sequence 
             in both directions (forward and backward), then sums the outputs.
           </div>
-<div class="formula-box">
-<div>
-<strong>h<sub>bidir</sub></strong> = 
-          <span>h<sub>→</sub></span> + 
-          <span>h<sub>←</sub></span>
-</div>
-<div>
-          Forward and backward hidden states are summed element-wise
-        </div>
-</div>
+
 <h3>Two-Level Processing in Graph Mamba</h3>
 <div class="info-box">
-<p><strong>Level 1: Token-Level Bidirectional Mamba</strong></p>
-<p>
-                For each node <em>v</em>, we have K tokens (different-radius subgraphs). Bidirectional Mamba processes these K tokens 
-                to produce one <em>aggregated embedding</em> for node <em>v</em>.
-            </p>
-<p>
-                This lets the model decide which subgraphs are most important for this specific node.
-            </p>
-</div>
-<div class="info-box">
-<p><strong>Level 2: Node-Level Bidirectional Mamba</strong></p>
-<p>
-                After all nodes have their aggregated embeddings, we treat <em>all N nodes</em> as one long sequence and run 
-                bidirectional Mamba again.
-            </p>
-<p>
-                This enables nodes to "see" each other at long distances <strong>without</strong> quadratic attention complexity — 
-                it's like multi-hop message passing, but through Mamba instead of GNN layers.
-            </p>
-</div>
+<p><strong>Level 1: Intra-Node Processing (Token Aggregation)</strong></p> 
+<p> For a given node \(v\), the input is the sequence of \(K\) token vectors \(\mathbf{X}(v)\) representing multi-scale structural snapshots. A Bidirectional Mamba block operates on this sequence to fuse these snapshots into a single, comprehensive representation for the node. </p> 
+<p> Formally, this stage functions as a learnable aggregation function, determining the relative importance of different neighborhood scales (from local to global) to produce the node embedding \(\mathbf{h}_v \in \mathbb{R}^{d}\). </p> 
+</div> 
+<div class="info-box"> 
+<p><strong>Level 2: Inter-Node Processing (Global Propagation)</strong></p> 
+<p> Once node embeddings \(\{\mathbf{h}_v\}_{v \in V}\) are computed for all \(N\) vertices, they are arranged into a global sequence. A second Bidirectional Mamba layer processes this graph-level sequence. </p> 
+<p> This stage facilitates long-range interaction between distant nodes without the explicit edge traversal of GNNs or the quadratic cost of Transformers. It effectively creates a "virtual" message-passing channel where any node can influence any other node via the recurrent state, regardless of graph distance. </p> 
+</div> 
 <div class="key-takeaway">
-<strong>Why Two Levels?</strong> The first level learns which neighborhood scales matter. 
-            The second level enables long-range communication between distant nodes — all in linear time.
-        </div>
+ <strong>Architectural Rationale:</strong> This hierarchical design decouples local feature extraction from global reasoning. The first level learns optimal local structural descriptors from multi-scale snapshots, while the second level enables efficient, linear-time global information propagation across the entire graph. </div> 
 </section>
 <section class="article-width">
 <h2>End-to-End Architecture</h2>
 <p class="section-intro">
-    The complete Graph Mamba pipeline is surprisingly simple: only 4 trainable layers 
-    (2 GCN + 1 SSM + 1 Linear). No attention, no deep stacks, no complex tricks.
+    The Graph Mamba pipeline is characterized by its efficient design, requiring only a minimal set of trainable components. By substituting complex attention mechanisms and deep message-passing stacks with a concise sequence of local encoders and selective state space models, the architecture achieves structural depth without the associated computational overhead. 
 </p>
 <div class="interactive-figure" style="min-height: 400px; position: relative; width: 160%; margin-left: -30%; margin-top: 1.5rem; margin-bottom: 1.5rem; overflow: hidden; background: #1a1d21; border: 1px solid #3d4147; color: #e8e6e3;">
 <div style="padding: 1rem 2rem; background: var(--bg-dark); height: 400px; display: flex; align-items: center; justify-content: center; --bg-dark: #1a1d21; --bg-card: #232629; --bg-card-hover: #2d3136; --text-light: #e8e6e3; --text-muted: #9ca3af; --text-bright: #d1d5db; --color-node: #c45c3e; --color-edge: #d4a754; --color-accent: #5a7fb3; --color-forward: #5a7fb3; --color-backward: #c4964a; --color-success: #4a8a5a; --color-border: #3d4147; color: #e8e6e3;">
@@ -699,19 +575,14 @@ toc: false
 </div>
 </div>
 <div class="info-box">
-<h4>🔍 Architecture Breakdown</h4>
+<h4>Architectural Components</h4>
 <ul>
-<li><strong>Tokeniser:</strong> Samples random walks of length 1-3 from the graph, creating subgraph tokens</li>
-<li><strong>Mini-GCN (2 layers):</strong> Encodes each token locally using graph convolutions + mean pooling</li>
-<li><strong>Bidirectional SSM:</strong> Processes token sequence in both directions (forward &amp; backward) to build context-rich node representations</li>
-<li><strong>Linear Classifier:</strong> Maps final embeddings to class predictions</li>
-</ul>
-</div>
-<p>
-    This elegant design achieves <strong>state-of-the-art performance</strong> on long-range and large-scale graph benchmarks 
-    with <strong>linear complexity</strong> O(N) — compared to O(N²) for Graph Transformers — 
-    while using significantly less memory.
-</p>
+<li><strong>Tokeniser:</strong> Generation of multi-scale structural snapshots \(\{\mathcal{T}_{\ell}(v)\}\) via random walk sampling. </li>
+<li><strong>Local Encoding:</strong> Application of the parameterized encoder \(\varphi(\cdot)\) (specifically, a 2-layer GCN followed by mean pooling) to map each subgraph to a latent vector \(\mathbf{x}_{\ell} \in \mathbb{R}^d\).</li> 
+<li><strong>Sequential Modeling:</strong> Contextualization of the token sequence \(\mathbf{X}(v)\) via a Bidirectional Mamba block, fusing forward and backward hidden states to produce the final node embedding.</li> 
+<li><strong>Prediction Head:</strong> A linear projection layer mapping the aggregated representations to the target label space for classification.</li> </ul> </div>
+
+<p> This design yields a model that is both parameter-efficient and computationally scalable. It achieves <strong>linear time complexity</strong> \(O(K)\) relative to sequence length—in stark contrast to the \(O(K^2)\) cost of Graph Transformers — while maintaining a reduced memory footprint, enabling state-of-the-art performance on large-scale benchmarks. </p>
 </section>
 <section class="article-width" id="results">
 <h2>Results on Cora</h2>
@@ -1051,7 +922,7 @@ window.GCN_LOCAL_PAYLOAD = {
       "steps": [
         {
           "id": "adjacency",
-          "title": "Adjacency A",
+          "title": "Adjacency Matrix 𝐀_ℓ",
           "type": "matrix",
           "matrix": {
             "rows": ["0", "1", "2", "3", "4", "5"],
@@ -1065,15 +936,15 @@ window.GCN_LOCAL_PAYLOAD = {
               [1, 0, 0, 0, 0, 0]
             ]
           },
-          "explain": "The adjacency matrix shows which nodes in the token are directly connected.",
+          "explain": "The adjacency matrix 𝐀_ℓ represents the connectivity within the token 𝓣_ℓ(v).",
           "formula": {
-            "lhs": "A[i,j]",
-            "rhs": "1 if nodes i and j share an edge, else 0"
+            "lhs": "𝐀_ℓ[i,j]",
+            "rhs": "1 if i,j connected in 𝓣_ℓ, else 0"
           }
         },
         {
           "id": "input_features",
-          "title": "Input features X",
+          "title": "Node Features 𝐇⁽⁰⁾",
           "type": "matrix",
           "matrix": {
             "rows": ["0", "1", "2", "3", "4", "5"],
@@ -1087,15 +958,15 @@ window.GCN_LOCAL_PAYLOAD = {
               [-0.17, -0.3, 0.09]
             ]
           },
-          "explain": "Each row is a node, each column a feature. These are the raw node features before any GCN processing.",
+          "explain": "Initial node features for the subgraph nodes, forming the matrix 𝐇⁽⁰⁾.",
           "formula": {
-            "lhs": "X[i,f]",
-            "rhs": "raw feature value of node i in dimension f"
+            "lhs": "𝐇⁽⁰⁾[i,f]",
+            "rhs": "Raw feature f of node i in dimension f"
           }
         },
         {
           "id": "x1",
-          "title": "X1 = X·W1ᵀ",
+          "title": "Linear Transform I",
           "type": "matrix",
           "matrix": {
             "rows": ["0", "1", "2", "3", "4", "5"],
@@ -1109,15 +980,15 @@ window.GCN_LOCAL_PAYLOAD = {
               [-0.19, 0.07, -0.06]
             ]
           },
-          "explain": "The first linear layer mixes input features into hidden dimensions h0, h1, h2.",
+          "explain": "Projects features into the first hidden space via weight matrix 𝐖⁽⁰⁾.",
           "formula": {
-            "lhs": "X1[i,h]",
-            "rhs": "Σ_f X[i,f]·W1[h,f]"
+            "lhs": "Temp",
+            "rhs": "𝐇⁽⁰⁾𝐖⁽⁰⁾"
           }
         },
         {
           "id": "ax1",
-          "title": "AX1 = A·X1",
+          "title": "Aggregation I",
           "type": "matrix",
           "matrix": {
             "rows": ["0", "1", "2", "3", "4", "5"],
@@ -1131,15 +1002,15 @@ window.GCN_LOCAL_PAYLOAD = {
               [0.03, 0.25, 0.02]
             ]
           },
-          "explain": "Each node sums hidden messages X1[j] from its neighbors according to A.",
+          "explain": "Aggregates messages from neighbors (simulates normalized multiplication Ã·Temp).",
           "formula": {
-            "lhs": "AX1[i,h]",
-            "rhs": "Σ_j A[i,j]·X1[j,h]"
+            "lhs": "Agg",
+            "rhs": "𝐃⁻½𝐀_ℓ𝐃⁻½ · (𝐇⁽⁰⁾𝐖⁽⁰⁾)"
           }
         },
         {
           "id": "h1",
-          "title": "H1 = ReLU(AX1)",
+          "title": "Activation I (𝐇⁽¹⁾)",
           "type": "matrix",
           "matrix": {
             "rows": ["0", "1", "2", "3", "4", "5"],
@@ -1153,15 +1024,15 @@ window.GCN_LOCAL_PAYLOAD = {
               [0.03, 0.25, 0.02]
             ]
           },
-          "explain": "ReLU keeps positive responses and sets negative ones to zero, focusing on strongly activated patterns.",
+          "explain": "Applies ReLU activation σ(·) to obtain the first layer embeddings 𝐇⁽¹⁾.",
           "formula": {
-            "lhs": "H1[i,h]",
-            "rhs": "max(0, AX1[i,h])"
+            "lhs": "𝐇⁽¹⁾",
+            "rhs": "σ(Agg)"
           }
         },
         {
           "id": "x2",
-          "title": "X2 = H1·W2ᵀ",
+          "title": "Linear Transform II",
           "type": "matrix",
           "matrix": {
             "rows": ["0", "1", "2", "3", "4", "5"],
@@ -1175,15 +1046,15 @@ window.GCN_LOCAL_PAYLOAD = {
               [-0.05, 0.12]
             ]
           },
-          "explain": "The second linear layer refines hidden states based on H1.",
+          "explain": "Projects 𝐇⁽¹⁾ via the second weight matrix 𝐖⁽¹⁾.",
           "formula": {
-            "lhs": "X2[i,h]",
-            "rhs": "Σ_f H1[i,f]·W2[h,f]"
+            "lhs": "Temp",
+            "rhs": "𝐇⁽¹⁾𝐖⁽¹⁾"
           }
         },
         {
           "id": "ax2",
-          "title": "AX2 = A·X2",
+          "title": "Aggregation II",
           "type": "matrix",
           "matrix": {
             "rows": ["0", "1", "2", "3", "4", "5"],
@@ -1197,15 +1068,15 @@ window.GCN_LOCAL_PAYLOAD = {
               [0.13, 0.0]
             ]
           },
-          "explain": "Second-hop aggregation spreads information from distant nodes back through the graph.",
+          "explain": "Second round of neighborhood aggregation using the same structure 𝐀_ℓ.",
           "formula": {
-            "lhs": "AX2[i,h]",
-            "rhs": "Σ_j A[i,j]·X2[j,h]"
+            "lhs": "Agg",
+            "rhs": "𝐃⁻½𝐀_ℓ𝐃⁻½ · (𝐇⁽¹⁾𝐖⁽¹⁾)"
           }
         },
         {
           "id": "h2",
-          "title": "H2 = ReLU(AX2)",
+          "title": "Activation II (𝐇⁽²⁾)",
           "type": "matrix",
           "matrix": {
             "rows": ["0", "1", "2", "3", "4", "5"],
@@ -1219,24 +1090,24 @@ window.GCN_LOCAL_PAYLOAD = {
               [0.13, 0.0]
             ]
           },
-          "explain": "The final hidden activations for all nodes in the token.",
+          "explain": "Final node representations 𝐇⁽²⁾ for the snapshot.",
           "formula": {
-            "lhs": "H2[i,h]",
-            "rhs": "max(0, AX2[i,h])"
+            "lhs": "𝐇⁽²⁾",
+            "rhs": "σ(Agg)"
           }
         },
         {
           "id": "z",
-          "title": "z = mean(H2)",
+          "title": "Token Embedding 𝐱_ℓ(v)",
           "type": "vector",
           "vector": {
             "labels": ["h0", "h1"],
             "values": [0.247, 0.059]
           },
-          "explain": "Pooling over all k=6 nodes yields one summary vector z for this token.",
+          "explain": "Mean pooling over all nodes in the snapshot yields the final token vector 𝐱_ℓ(v).",
           "formula": {
-            "lhs": "z[h]",
-            "rhs": "1/k · Σ_i H2[i,h] with k=6"
+            "lhs": "𝐱_ℓ(v)",
+            "rhs": "1/k · Σ_i 𝐇⁽²⁾[i,h] with k=6"
           }
         }
       ]
@@ -2326,7 +2197,7 @@ if (!container) return;
       .style('box-sizing', 'border-box')
       .style('height', '100%');
 
-    // ========== LEFT: Force-directed Graph (как в Random Walks) ==========
+    // ========== LEFT: Force-directed Graph ==========
     const graphPanel = wrapper.append('div').attr('class', 'gmv-panel')
       .style('flex', '1 1 420px')
       .style('min-width', '320px')
@@ -2684,6 +2555,8 @@ if (!container) return;
       const nodeIndex = rowIndex < layerNodes.length ? layerNodes[rowIndex] : null;
       let text = '';
 
+      const valStr = value.toFixed(3);
+
       if (step.id === 'adjacency') {
         const u = parseInt(rowId, 10);
         const v = parseInt(colId, 10);
@@ -2691,19 +2564,19 @@ if (!container) return;
 
         if (value !== 0) {
           highlightEdge(u, v);
-          text = `A[${u},${v}] = 1 → nodes ${u} and ${v} are directly connected within the token.`;
+          text = `𝐀_ℓ[${u},${v}] = 1 → Node ${u} and ${v} are connected in the structural token 𝓣_ℓ(v).`;
         } else {
-          text = `A[${u},${v}] = 0 → nodes ${u} and ${v} are NOT connected (but may be indirectly connected through others).`;
+          text = `𝐀_ℓ[${u},${v}] = 0 → No direct edge in the token 𝓣_ℓ(v).`;
         }
       } else if (step.id === 'input_features') {
         if (nodeIndex !== null) {
           highlightNodes([nodeIndex]);
-          text = `X[${nodeIndex},${colId}] = ${value.toFixed(3)} → this is the original feature ${colId} of node ${nodeIndex}, before any GCN processing.`;
+          text = `𝐇⁽⁰⁾[${nodeIndex}, ${colId}] = ${valStr} → Initial feature of node ${nodeIndex} in the token.`;
         }
       } else if (step.id === 'x1') {
         if (nodeIndex !== null) {
           highlightNodes([nodeIndex]);
-          text = `X1[${nodeIndex},${colId}] = ${value.toFixed(3)} → after the first linear layer X·W1ᵀ, node ${nodeIndex} receives a hidden activation in dimension ${colId}.`;
+          text = `(𝐇⁽⁰⁾𝐖⁽⁰⁾)[${nodeIndex}, ${colId}] = ${valStr} → Node ${nodeIndex} after linear transformation, before aggregation.`;
         }
       } else if (step.id === 'ax1') {
         if (nodeIndex !== null) {
@@ -2738,17 +2611,17 @@ if (!container) return;
           highlightMultipleEdges(edgePairs);
           
           const sum = sumValues.reduce((a, b) => a + b, 0);
-          text = `AX1[${nodeIndex},${colId}] = ${sumTerms.join(' + ')} = ${sum.toFixed(3)}`;
+          text = `[Ã𝐇...][${nodeIndex},${colId}] = ${sumTerms.join(' + ')} = ${valStr} → Aggregating signals from neighbors (simulating 𝐃⁻½𝐀𝐃⁻½ step).`;
         }
       } else if (step.id === 'h1') {
         if (nodeIndex !== null) {
           highlightNodes([nodeIndex]);
-          text = `H1[${nodeIndex},${colId}] = ${value.toFixed(3)} → after ReLU: if AX1 was negative, this will be 0, otherwise unchanged.`;
+          text = `𝐇⁽¹⁾[${nodeIndex}, ${colId}] = ${valStr} → Output of Layer I after ReLU activation σ(·).`;
         }
       } else if (step.id === 'x2') {
         if (nodeIndex !== null) {
           highlightNodes([nodeIndex]);
-          text = `X2[${nodeIndex},${colId}] = ${value.toFixed(3)} → after the second linear layer H1·W2ᵀ, a deeper hidden representation is created.`;
+          text = `(𝐇⁽¹⁾𝐖⁽¹⁾)[${nodeIndex}, ${colId}] = ${valStr} → Node ${nodeIndex} transformed by second weight matrix.`;
         }
       } else if (step.id === 'ax2') {
         if (nodeIndex !== null) {
@@ -2783,12 +2656,13 @@ if (!container) return;
           highlightMultipleEdges(edgePairs);
 
           const sum = sumValues.reduce((a, b) => a + b, 0);
-          text = `AX2[${nodeIndex},${colId}] = ${sumTerms.join(' + ')} = ${sum.toFixed(3)}`;
+          text = `[Ã𝐇...][${nodeIndex},${colId}] = ${sumTerms.join(' + ')} = ${valStr} → Second round of neighborhood aggregation.`;
+
         }
       } else if (step.id === 'h2') {
         if (nodeIndex !== null) {
           highlightNodes([nodeIndex]);
-          text = `H2[${nodeIndex},${colId}] = ${value.toFixed(3)} → final activation of node ${nodeIndex} after the second ReLU.`;
+          text = `𝐇⁽²⁾[${nodeIndex}, ${colId}] = ${valStr} → Final node representations in the snapshot.`;
         }
       }
 
@@ -2799,7 +2673,7 @@ if (!container) return;
 
     function handleVectorHover(step, index, label, value) {
       resetGraph();
-      let text = `z[${label}] = ${value.toFixed(3)} → `;
+      let text = `𝐱_ℓ(v)[${label}] = ${value.toFixed(3)} → `;
       
       if (step.id === 'z') {
         const h2Step = layer.steps.find(s => s.id === 'h2');
@@ -2824,9 +2698,9 @@ if (!container) return;
           const sum = sumValues.reduce((a, b) => a + b, 0);
           const mean = sum / numNodes;
           
-          text = `z[${label}] = (${sumTerms.join(' + ')}) / ${numNodes} = ${mean.toFixed(3)}`;
+          text = `𝐱_ℓ(v)[${label}] = (${sumTerms.join(' + ')}) / ${numNodes} = ${mean.toFixed(3)}`;
         } else {
-          text += `this is the averaged value...`;
+          text += `Mean pooling of all nodes in snapshot 𝓣_ℓ(v). This vector becomes one row in 𝐗(v).`;
         }
       }
       
@@ -2868,7 +2742,7 @@ if (!container) return;
       } else if (step.type === 'vector') {
         drawVector(gridHolder, step);
       } else {
-        gridHolder.append('div').style('color', '#e5e7eb').text('Нет визуализации.');
+        gridHolder.append('div').style('color', '#e5e7eb').text('No visualization.');
       }
 
       hoverDetailDiv = stepCard.append('div')
