@@ -87,18 +87,16 @@ toc: false
 </ol>
 </nav>
 <section class="article-width" id="foundations">
-<h2>Foundations: Understanding Graphs</h2>
+<h2>Foundations: Understanding Graphs & Sequence Models</h2>
 <p class="section-intro">
             Before diving into Graph Mamba, let's establish the fundamentals of graph-structured data 
             and why traditional approaches struggle with it.
         </p>
-<h3>What is a Graph?</h3>
+
+<h3>The Limitations of Message Passing</h3>
 <p>
             A <strong>graph</strong> is a data structure with <strong>nodes</strong> (entities) and 
-            <strong>edges</strong> (relationships) connecting these nodes.
-        </p>
-<p>
-            Graph Neural Networks (GNNs) are the standard for learning on graph-structured data. Most Graph Neural Networks operate via <strong>message passing</strong>: at each layer, every node
+            <strong>edges</strong> (relationships) connecting these nodes. Graph Neural Networks (GNNs) are the standard for learning on graph-structured data. Most Graph Neural Networks operate via <strong>message passing</strong>: at each layer, every node
             updates its representation by aggregating information from its immediate neighbors. One layer reaches only one-hop neighbors, two layers reach two hops, and so on.
         </p>
 <p>
@@ -107,6 +105,26 @@ toc: false
 <p>
             There is also a practical cost: each layer typically requires iterating over edges to aggregate messages, so deeper models mean more passes over the graph and higher memory/compute. This is especially painful for large, dense, or high-degree graphs.
         </p>
+<h3>Enter Mamba: The Selective State Space Model</h3>
+  <p>
+    To overcome these bottlenecks, we turn to <strong>Mamba</strong>, a recent architecture based on <strong>Selective State Space Models (SSMs)</strong>. Mamba was originally designed for sequence modeling, but its core properties are uniquely suited for graphs when we view them as sequences of structural snapshots.
+  </p>
+  <p>
+    At its heart, Mamba combines the best traits of Recurrent Neural Networks (RNNs) and Transformers and avoids their respective pitfalls:
+  </p>
+
+  <ul style="margin-top: 1rem; margin-bottom: 1.5rem; line-height: 1.6; color: #374151;">
+    <li style="margin-bottom: 0.75rem;">
+      <strong>Unlike RNNs</strong>, which often forget early information due to the vanishing gradient problem, Mamba uses a structured state-space transition that can theoretically preserve information over infinitely long sequences. Its selection mechanism allows it to dynamically decide what to remember and what to ignore at each step.
+    </li>
+    <li style="margin-bottom: 0.75rem;">
+      <strong>Unlike Transformers</strong>, which require \(O(N^2)\) memory and compute to attend to every token against every other token, Mamba operates with linear complexity \(O(N)\). It compresses context into a fixed-size hidden state rather than storing a massive attention matrix.
+    </li>
+  </ul>
+
+  <p>
+    This linear efficiency is the key unlock for graphs. It allows us to process long sequences of graph snapshots without the exploding computational cost of a Transformer or the forgetting issues of an RNN. By linearizing graph neighborhoods, we can use Mamba to propagate information globally across the entire graph structure in a single, efficient pass.
+  </p>
 
 <details>
 <summary><strong>Python code:</strong> Loading the Cora dataset (from <code>tutorial/graph_mamba.ipynb</code>)</summary>
@@ -386,7 +404,7 @@ toc: false
 <section class="article-width" id="step3">
 <h2>The Mamba Block: Selective State Spaces</h2>
 <p class="section-intro">
-          Having mapped the tokens into a sequence of latent representations, the next challenge is to model the dependencies within this sequence efficiently. To this end, we employ the Mamba architecture, which leverages selective state space models (SSMs) to achieve linear computational complexity with respect to sequence length, unlike attention mechanisms with quadratic computational complexity.
+          After mapping the tokens into a sequence of latent representations the next challenge is to model the dependencies within this sequence efficiently. To this end, we employ the Mamba architecture, which leverages selective state space models (SSMs) to achieve linear computational complexity with respect to sequence length, unlike attention mechanisms with quadratic computational complexity.
         </p>
 <h3>From Tokens to Sequences</h3>
 <p>
@@ -402,7 +420,7 @@ toc: false
             Unlike permutation-equivariant Transformers, the Mamba architecture is inherently sequential; the state update at step \(t\) depends strictly on the previous states \(1, \dots, t-1\). Consequently, the ordering of the token sequence \(\mathbf{X}(v)\) is structurally significant. 
         </p>
 <div class="info-box">
-<h4>Ordering Protocol</h4> 
+<strong>Ordering Protocol:</strong> 
 <p> <strong>Hierarchical Structure (\(m \ge 1\)):</strong> Subgraph tokens possess an inherent inclusion hierarchy. GMN adopts a <strong>reverse</strong> ordering: the sequence begins with the largest scale snapshots (\(\ell=m\)) and progresses inward to the local node features (\(\ell=0\)). This ensures that the final state update, corresponding to the node itself, is conditioned on the full multi-scale context. </p> 
 <p> <strong>Stochastic Permutation (\(s \ge 2\)):</strong> Within any fixed scale \(\ell\), the \(s\) independent samples are randomly permuted to induce invariance to the sampling order. </p> 
 <p> <strong>Node Tokenization (\(m=0\)):</strong> In the absence of hierarchical structure, tokens are ordered by global topological metrics (e.g., Personalized PageRank or degree centrality) to provide a canonical sequence. </p>
@@ -414,16 +432,6 @@ toc: false
     <li>Within each block of scale \(\ell\), the \(s\) samples are randomly shuffled.</li> 
   </ul> 
 </div>
-<h3>Why Mamba?</h3> 
-<p> Standard Graph Neural Networks (GNNs) rely on iterative <strong>message passing</strong>, where the receptive field grows only linearly with network depth. To capture long-range dependencies, these networks must stack many layers, leading to the well-known pathologies of <strong>over-smoothing</strong> (feature convergence) and <strong>over-squashing</strong> (information bottlenecks). </p> 
-<p> <strong>Mamba</strong> provides a fundamental alternative by treating graph structures as sequences. <strong>Selective State Space Models (SSMs)</strong> compress the context of an arbitrary-length token sequence into a recurrent hidden state. This allows the model to reason over global graph structures efficiently with \(O(N)\) complexity. </p> 
-<div class="comparison-section">
-<table> 
-<thead> <tr> <th>Property</th> <th>Traditional GNN (MPNN)</th> <th>Graph Mamba</th> </tr> </thead> <tbody> <tr> <td>
-<strong>Context Mechanism</strong></td> <td>Local Aggregation (1-hop per layer)</td> <td>Recurrent State (Infinite horizon)</td> </tr> <tr> <td>
-<strong>Long-Range Dependencies</strong></td> <td>Requires deep stacking (High cost)</td> <td>Native support via sequence memory</td> </tr> <tr> <td>
-<strong>Complexity</strong></td> <td>\(O(|E|)\) (Edges matter most)</td> <td>\(O(K)\) (Sequence length matters most)</td> </tr> <tr> <td>
-<strong>Information Flow</strong></td> <td>Bottlenecked by graph topology</td> <td>Direct access via selective state</td> </tr> </tbody> </table> </div>
 
 <h3>The Core Mechanism</h3>
  <p> As the model processes the sequence of structural tokens \(\mathbf{x}_1, \dots, \mathbf{x}_K\), the Mamba block maintains a compressed representation of the context via a <strong>hidden state</strong>. Formally, this process is defined by a discretized state space equation: </p> 
