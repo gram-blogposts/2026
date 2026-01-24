@@ -110,15 +110,18 @@ toc: false
     To overcome these bottlenecks, we turn to <strong>Mamba</strong>, a recent architecture based on <strong>Selective State Space Models (SSMs)</strong>. Mamba was originally designed for sequence modeling, but its core properties are uniquely suited for graphs when we view them as sequences of structural snapshots.
   </p>
   <p>
-    At its heart, Mamba combines the best traits of Recurrent Neural Networks (RNNs) and Transformers and avoids their respective pitfalls:
+    At first glance, Mamba looks like an RNN—it processes sequences step-by-step with a hidden state. But architecturally there's a key difference: Mamba is fully <strong>linear</strong> with no activation functions between recurrent steps. This small change (plus a selection mechanism that adds a data-dependent <em>keep gate</em> for filtering information) is what allows parallelization during training. So you get RNN's recurrent structure with Transformer-level quality.
   </p>
 
   <ul style="margin-top: 1rem; margin-bottom: 1.5rem; line-height: 1.6; color: #374151;">
     <li style="margin-bottom: 0.75rem;">
-      <strong>Unlike RNNs</strong>, which often forget early information due to the vanishing gradient problem, Mamba uses a structured state-space transition that can theoretically preserve information over infinitely long sequences. Its selection mechanism allows it to dynamically decide what to remember and what to ignore at each step.
+      <strong>Traditional RNN problem</strong>: sequential computation means you can't parallelize across timesteps—one step depends on the previous, making training slow.
     </li>
     <li style="margin-bottom: 0.75rem;">
-      <strong>Unlike Transformers</strong>, which require \(O(N^2)\) memory and compute to attend to every token against every other token, Mamba operates with linear complexity \(O(N)\). It compresses context into a fixed-size hidden state rather than storing a massive attention matrix.
+      <strong>Mamba's solution</strong>: linear recurrence (no activations between steps) can be unrolled and computed in parallel during training, while still running sequentially during inference for \(O(1)\) memory.
+    </li>
+    <li style="margin-bottom: 0.75rem;">
+      <strong>Transformer comparison</strong>: achieves Transformer-level modeling quality with linear \(O(N)\) complexity instead of quadratic \(O(N^2)\), avoiding the massive attention matrix.
     </li>
   </ul>
 
