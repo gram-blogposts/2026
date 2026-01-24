@@ -24,36 +24,66 @@ toc: false
 <p>
 <strong>Graphs</strong> are everywhere: social networks, molecular structures, knowledge bases, and recommendation systems. 
             Traditional Graph Neural Networks (GNNs) have been the go-to approach for learning from graph-structured data, 
-            but they face fundamental challenges with <strong>long-range dependencies</strong> and <strong>computational efficiency</strong> on large graphs.
+            but they face fundamental challenges with long-range dependencies and computational efficiency on large graphs.
         </p>
 <p>
             This interactive article introduces <strong>Graph Mamba Networks</strong> - a novel approach that replaces traditional 
             message passing with <strong>Selective State Space Models (SSMs)</strong>. Instead of iteratively aggregating information 
-            from neighbors, we linearize graph neighborhoods into sequences and process them efficiently using Mamba's selective gating mechanism.
+            from neighbors, we linearize graph neighborhoods into sequences and process them efficiently using Mamba's selective gating mechanism. We empirically validate this methodology through experiments on the <strong>Cora citation network</strong>, demonstrating its efficacy in node classification tasks.
         </p>
 </section>
 <section style="width: 100%; margin: 0 auto;">
-<div class="interactive-figure if--600" id="cora-viz" style="position: relative; width: 160%; margin-left: -30%; margin-top: 1.5rem; margin-bottom: 1.5rem; overflow: hidden; background: #1a1d21; border: 1px solid #3d4147; height: 560px; min-height: 560px; color: #e8e6e3;">
-<div class="viz-controls" style="position: absolute; top: 15px; left: 15px; background: rgba(26,29,33,0.9); color: #e8e6e3; padding: 8px 10px; font-size: 12px; border: 1px solid #3d4147;">
-<strong style="color: #e8e6e3;">Cora Citation Network</strong><br/>
-<span style="color: #e8e6e3;">Drag to rotate • Scroll to zoom</span><br/>
-<button onclick="resetCamera()" style="margin-top: 6px; background: #2563eb; border: none; color: #ffffff; padding: 4px 8px; cursor: pointer; font-size: 12px; box-sizing: border-box;">Reset View</button>
-<div style="margin-top: 6px; color: #e8e6e3; font-size: 12px;">Ground truth topics</div>
-</div>
-</div>
-<div class="figure-caption">
-<strong>Figure 1:</strong> Ground-truth Cora citations (papers as nodes, edges as citations). Colors = true topics from the dataset.
-        </div>
+  <div style="position: relative; width: 140%; margin-left: -20%; margin-top: 1.5rem; margin-bottom: 1.5rem;">
+    <div style="position: relative; width: 100%; height: 560px; border: 1px solid #e5e7eb; background: #ffffff;
+        border-radius: 8px;
+        overflow: hidden; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        color: #1f2937;">
+      <div class="viz-footer" style="
+        position: absolute; 
+        bottom: 0; 
+        left: 0; 
+        width: 100%;
+        z-index: 10; 
+        background: rgba(255, 255, 255, 0.5);
+        backdrop-filter: blur(2px);
+        color: #4b5563; 
+        padding: 6px 0; 
+        font-size: 11px; 
+        text-align: center;
+        border-top: 1px solid rgba(229, 231, 235, 0.5);
+        font-family: monospace;
+        pointer-events: none;">
+        Left-click: rotate • Scroll: zoom
+      </div>
+      <div class="interactive-figure if--600" id="cora-viz" style="
+          position: absolute; /* Absolute, чтобы занять всё место в обертке */
+          top: 0;
+          left: 0;
+          width: 100%; 
+          height: 100%; 
+          overflow: hidden; 
+          background: #ffffff;">
+      </div>
+    </div>
+    <div class="figure-caption" style="margin-top: 8px; text-align: left; color: #666; font-size: 0.9em;">
+      <strong>Figure 1: Topological Visualization of the Cora Dataset.</strong> 
+      A 3D projection of the citation network, where nodes represent scientific publications and edges denote citation links. 
+      Node colors correspond to the ground-truth topic classification of each paper.
+    </div>
+  </div>
 </section>
+
 <nav class="table-of-contents">
 <h3>Contents</h3>
 <ol>
-<li><a href="#foundations">Foundations: What is a Graph?</a></li>
+<li><a href="#foundations">Foundations: Understanding Graphs</a></li>
 <li><a href="#step1">Step 1: From Walks to Tokens</a></li>
 <li><a href="#step2">Step 2: Encoding Subgraphs with Local Encoders</a></li>
-<li><a href="#step3">Step 3: The Mamba Block &amp; Selective State Spaces</a></li>
-<li><a href="#step4">Step 4: Bidirectional Processing</a></li>
-<li><a href="#results">Experimental Results on Cora</a></li>
+<li><a href="#step3">Step 3: The Mamba Block: Selective State Spaces</a></li>
+<li><a href="#step4">Step 4: Bidirectional Sequence Modeling</a></li>
+<li><a href="#arch">End-to-End Architecture</a></li>
+<li><a href="#results">Results on Cora</a></li>
 </ol>
 </nav>
 <section class="article-width" id="foundations">
@@ -148,44 +178,101 @@ toc: false
         <span class="n">tokens</span><span class="p">[</span><span class="n">node</span><span class="p">][</span><span class="n">walk_length</span><span class="p">]</span> <span class="o">=</span> <span class="n">induced_graph</span></code></pre></figure>
 
 </details>
-<div class="interactive-figure" style="position: relative; width: 160%; margin-left: -30%; margin-top: 1.5rem; margin-bottom: 1.5rem; overflow: hidden; background: #1a1d21; border: 1px solid #3d4147; min-height: 500px; color: #e8e6e3;">
-<div id="walk-viz" style="display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; box-sizing: border-box; width: 100%; min-height: 550px; align-items: stretch;">
-<div id="walk-controls" style="flex: 0 0 220px; background: rgba(15,23,42,0.9); padding: 10px; font-family: monospace; font-size: 12px; border: 1px solid #334155; box-sizing: border-box;">
-<div style="margin-top: 2px; margin-bottom: 4px; color: #e5e7eb;"><strong style="color: #e5e7eb;">1. Number of walks M</strong></div>
-<input id="walk-count" max="8" min="1" step="1" style="width: 100%; box-sizing: border-box;" type="range" value="4"/>
-<div style="margin-top: 4px; color: #e5e7eb;">
-                M = <span id="walk-count-value" style="color: #e5e7eb;">4</span> walks
-              </div>
-<div style="margin-top: 8px; color: #e5e7eb;"><strong style="color: #e5e7eb;">2. Pick a center node</strong> (click any circle)</div>
-<div style="margin-top: 10px; margin-bottom: 4px; color: #e5e7eb;"><strong style="color: #e5e7eb;">3. Walk length ℓ</strong></div>
-<input id="walk-length" max="3" min="0" step="1" style="width: 100%; box-sizing: border-box;" type="range" value="1"/>
-<div style="margin-top: 4px; color: #e5e7eb;">
-                ℓ = <span id="walk-length-value" style="color: #e5e7eb;">1</span> steps
-              </div>
-<button id="sample-token-btn" style="margin-top: 10px; width: 100%; background: #2563eb; border: none; color: #ffffff; padding: 6px 8px; cursor: pointer; box-sizing: border-box;">
-                Generate token
-              </button>
-</div>
-<div id="walk-canvas" style="flex: 1 1 520px; min-width: 320px; height: 520px; position: relative; background: #0b1120; border: 1px solid #334155; box-sizing: border-box;"></div>
-<div id="token-panel" style="flex: 0 0 220px; background: rgba(15,23,42,0.9); padding: 10px; font-family: monospace; font-size: 12px; border: 1px solid #334155; box-sizing: border-box;">
-<div style="margin-bottom: 6px; color: #e5e7eb;"><strong style="color: #e5e7eb;">Token matrix for this node</strong></div>
-<div style="font-size: 10px; color: #9ca3af; margin-bottom: 8px;">
-                In this demo we use the simple case s = 1:
-                each row corresponds to all M walks of one length ℓ, encoded as a d‑dimensional vector.
-                In the full GMN model the sampling is repeated s times and the (ℓ, j) pairs are flattened
-                into a K × d sequence for Mamba.
-              </div>
-<svg height="120" id="token-matrix" width="160"></svg>
-</div>
-<div id="walk-sequence" style="flex: 1 1 100%; background: rgba(15,23,42,0.9); color: #a5b4fc; padding: 8px 10px; font-family: monospace; font-size: 12px; border: 1px solid #334155; box-sizing: border-box;">
-              Choose M, click a node and choose ℓ, then press “Generate token”.
+<section style="width: 100%; margin: 0 auto;">
+  <div style="position: relative; width: 140%; margin-left: -20%; margin-top: 1.5rem; margin-bottom: 1.5rem;">
+    <div class="interactive-figure" style="
+        position: relative; 
+        overflow: hidden; 
+        background: #ffffff; 
+        border: 1px solid #e5e7eb; 
+        border-radius: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        color: #1f2937;">
+      <div id="walk-viz" style="display: flex; flex-wrap: wrap; gap: 0; width: 100%; min-height: 550px; align-items: stretch;">
+        <div id="walk-controls" style="
+            flex: 0 0 240px; 
+            background: #f9fafb; 
+            padding: 20px; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            border-right: 1px solid #e5e7eb; 
+            box-sizing: border-box;">
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 18px; margin-bottom: 6px; font-weight: 600; color: #111827;">1. Walks per Sample (M)</div>
+            <input id="walk-count" max="8" min="1" step="1" style="width: 100%; cursor: pointer;" type="range" value="4"/>
+            <div style="margin-top: 4px; color: #6b7280; font-size: 16px;">
+              M = <span id="walk-count-value" style="font-weight: 600; color: #16a34a;">4</span> walks
             </div>
-</div>
-</div>
-<div class="figure-caption">
-<strong>Figure:</strong> Each blue "cloud" is still a graph: it has several nodes, edges, and node features. 
-            To feed it into the sequence model, we compress this whole subgraph into a single vector.
+          </div>
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 18px; font-weight: 600; color: #111827; margin-bottom: 4px;">2. Target Node</div>
+            <div style="color: #6b7280; font-size: 16px;">Click any node on the graph to select a center.</div>
+          </div>
+          <div style="margin-bottom: 20px;">
+            <div style="font-size: 18px; margin-bottom: 6px; font-weight: 600; color: #111827;">3. Walk Length (ℓ)</div>
+            <input id="walk-length" max="3" min="0" step="1" style="width: 100%; cursor: pointer;" type="range" value="1"/>
+            <div style="margin-top: 4px; color: #6b7280; font-size: 16px;">
+              ℓ = <span id="walk-length-value" style="font-weight: 600; color: #16a34a;">1</span> steps
+            </div>
+          </div>
+          <button id="sample-token-btn" style="
+              width: 100%; 
+              background: #16a34a; 
+              border: 1px solid #0f7d37; 
+              color: #ffffff; 
+              padding: 8px 12px; 
+              cursor: pointer; 
+              border-radius: 6px; 
+              font-weight: 500; 
+              font-size: 16px; 
+              box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+              transition: background 0.2s;">
+            Generate Token
+          </button>
         </div>
+        <div id="walk-canvas" style="
+            flex: 1 1 400px; 
+            min-width: 300px; 
+            height: 520px; 
+            position: relative; 
+            background: #ffffff; 
+            box-sizing: border-box;">
+        </div>
+        <div id="token-panel" style="
+            flex: 0 0 240px; 
+            background: #f9fafb; 
+            padding: 20px; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            border-left: 1px solid #e5e7eb; 
+            box-sizing: border-box;">         
+          <div style="ont-size: 18px; margin-bottom: 12px; font-weight: 600; color: #111827;">Token Encoding Output</div>         
+          <div style="font-size: 16px; color: #4b5563; line-height: 1.5; margin-bottom: 16px;">
+            For simplified visualization (s=1), each row represents the aggregated features of M random walks at length ℓ, projected to dimension d.
+          </div>        
+          <div style="background: #ffffff; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; display: flex; justify-content: center;">
+            <svg height="120" id="token-matrix" width="160"></svg>
+          </div>
+        </div>
+        <div id="walk-sequence" style="
+            flex: 1 1 100%; 
+            background: #ffffff; 
+            color: #4b5563; 
+            padding: 12px 20px; 
+            font-family: 'SF Mono', Consolas, Menlo, monospace; 
+            font-size: 12px; 
+            border-top: 1px solid #e5e7eb; 
+            box-sizing: border-box;">
+          > Ready. Select parameters and click "Generate Token".
+        </div>
+      </div>
+    </div>
+    <div class="figure-caption" style="margin-top: 8px; text-align: left; color: #666; font-size: 0.9em;">
+      <strong>Figure 2: Random Walk Sampling.</strong> 
+      Interactive demonstration of how structural snapshots are generated. 
+      The system samples M random walks of length ℓ starting from a center node (red). 
+      The induced subgraph formed by visited nodes constitutes a single token \(\mathcal{T}_{\ell}(v)\).
+    </div>
+
+  </div>
 </section>
 <section class="article-width" id="step2">
 <h2>Encoding Subgraphs with Local Encoders</h2>
@@ -280,13 +367,22 @@ toc: false
           <li><strong>Layer II & Pooling:</strong> Apply a second convolution step to obtain \(\mathbf{H}^{(2)}\), followed by a readout function (e.g., mean pooling) to compress the node set into a single token embedding \(\mathbf{x}_{\ell}(v)\).</li> 
         </ol> 
 </div>
-<div class="interactive-figure" style="min-height: 600px; background: #020617; border: 1px solid #1f2937; position: relative; width: 160%; margin-left: -30%; margin-top: 1.5rem; margin-bottom: 1.5rem; overflow: hidden; color: #e8e6e3;">
-<div id="gcn-local-viz" style="position: relative; width: 100%; height: 750px;"></div>
+<div style="width: 140%; margin-left: -20%; margin-top: 2rem; margin-bottom: 2rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  
+  <div class="interactive-figure" style="background: #ffffff; border: 1px solid #e5e7eb; display: flex; flex-wrap: wrap; overflow: hidden; 
+        border-radius: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        color: #1f2937;">
+    <div id="gcn-local-viz" style="width: 100%; min-height: 500px;"></div>
+  </div>
+
+  <div class="figure-caption" style="margin-top: 0.75rem; color: #4b5563; font-size: 0.9rem; line-height: 1.5;">
+    <strong>Figure 3:</strong> Interactive visualization of the GCN local encoder. Select a step on the right to see how information propagates through the token subgraph \(\mathcal{T}_{\ell}(v)\).
+  </div>
+
 </div>
-<div class="figure-caption">
-<strong>Visualization:</strong> This interactive figure demonstrates the internal mechanics of a two-layer GCN local encoder \(\varphi(\cdot)\) processing a single token. On the left, the induced subgraph \(\mathcal{T}_{\ell}(v)\) is displayed. The panel on the right allows you to trace the sequential tensor transformations: from the adjacency structure \(\mathbf{A}_{\ell}\) and initial features \(\mathbf{H}^{(0)}\), through the intermediate hidden states \(\mathbf{H}^{(1)}\) and \(\mathbf{H}^{(2)}\), to the final pooled token embedding \(\mathbf{x}_{\ell}(v)\).
-        </div>
-</section>
+
+
 <section class="article-width" id="step3">
 <h2>The Mamba Block: Selective State Spaces</h2>
 <p class="section-intro">
@@ -496,7 +592,7 @@ toc: false
 <div class="key-takeaway">
  <strong>Architectural Rationale:</strong> This hierarchical design decouples local feature extraction from global reasoning. The first level learns optimal local structural descriptors from multi-scale snapshots, while the second level enables efficient, linear-time global information propagation across the entire graph. </div> 
 </section>
-<section class="article-width">
+<section class="article-width" id="arch">
 <h2>End-to-End Architecture</h2>
 <p class="section-intro">
     The Graph Mamba pipeline is characterized by its efficient design, requiring only a minimal set of trainable components. By substituting complex attention mechanisms and deep message-passing stacks with a concise sequence of local encoders and selective state space models, the architecture achieves structural depth without the associated computational overhead. 
@@ -834,24 +930,72 @@ toc: false
 </details>
 </section>
 <section style="width: 100%; margin: 0 auto;">
-<h3 class="article-width">Classified Cora Graph (Graph Mamba)</h3>
-<div class="interactive-figure if--600" id="cora-classified-viz" style="position: relative; width: 160%; margin-left: -30%; margin-top: 1.5rem; margin-bottom: 1.5rem; overflow: hidden; background: #1a1d21; border: 1px solid #3d4147; height: 560px; min-height: 560px; color: #e8e6e3;">
-<div class="viz-controls" style="position: absolute; top: 15px; left: 15px; background: rgba(26,29,33,0.9); color: #e8e6e3; padding: 8px 10px; font-size: 12px; border: 1px solid #3d4147;">
-<strong style="color: #e8e6e3;">Predicted classes</strong><br/>
-<span style="color: #e8e6e3;">Drag to rotate • Scroll to zoom</span>
-<div id="cora-classified-status" style="margin-top: 6px; color: #e8e6e3; font-size: 12px;">Loading cora_visualization.json…</div>
-</div>
-</div>
-<div class="figure-caption">
-<strong>Figure:</strong> Model predictions on Cora after training (Graph Mamba best checkpoint). Colors = predicted topics.
-        </div>
+  <h3 class="article-width">Classified Cora Graph using Graph Mamba</h3>
+    <div style="width: 140%; margin-left: -20%; margin-top: 1.5rem; margin-bottom: 1.5rem;">
+    <div style="
+        position: relative; 
+        width: 100%; 
+        border: 1px solid #e5e7eb; 
+        background: #ffffff;
+        border-radius: 8px;
+        overflow: hidden; /* Важно для закругления углов */
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        color: #1f2937;">       
+      <div class="viz-header" style="
+          position: absolute; 
+          top: 15px; 
+          left: 15px; 
+          z-index: 10; 
+          background: rgba(255, 255, 255, 0.95); 
+          color: #1f2937; 
+          padding: 8px 12px; 
+          border: 1px solid #e5e7eb; 
+          border-radius: 6px; 
+          font-size: 12px; 
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+          pointer-events: auto;">
+        <strong style="display:block; margin-bottom:4px;">Prediction Status</strong>
+        <div id="cora-classified-status" style="color: #4b5563;">Loading predictions...</div>
+      </div>
+      <div class="viz-footer" style="
+          position: absolute; 
+          bottom: 0; 
+          left: 0; 
+          width: 100%;
+          z-index: 10; 
+          background: rgba(255, 255, 255, 0.5);
+          backdrop-filter: blur(2px);
+          color: #4b5563;
+          padding: 6px 0; 
+          font-size: 11px; 
+          text-align: center;
+          border-top: 1px solid rgba(229, 231, 235, 0.5);
+          font-family: monospace;
+          pointer-events: none;">
+        Left-click: rotate • Scroll: zoom
+      </div>
+      <div class="interactive-figure if--600" id="cora-classified-viz" style="
+          position: relative; 
+          width: 100%; 
+          height: 560px; 
+          min-height: 560px;
+          background: #ffffff;">
+      </div>
+    </div>
+    <div class="figure-caption" style="margin-top: 8px; text-align: left; color: #666; font-size: 0.9em;">
+      <strong>Figure 2: Inference Results on Cora.</strong> 
+      Visualization of node classifications generated by the Graph Mamba model. 
+      Node colors represent the predicted topic categories, demonstrating the model's ability to recover community structure.
+    </div>
+
+  </div>
 </section>
+
 <script>
-    (function() {
+      (function() {
       const container = document.getElementById('cora-classified-viz');
       const statusEl = document.getElementById('cora-classified-status');
       if (!container || !statusEl || typeof ForceGraph3D !== 'function') return;
-
       fetch('{{ "assets/html/2026-01-22-graph-mamba/data/cora_visualization_pred.json" | relative_url }}')
         .then(resp => {
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -860,20 +1004,36 @@ toc: false
         .then(payload => {
           const nodes = payload.nodes || [];
           const links = payload.links || [];
-
           const graph = ForceGraph3D()(container)
             .width(container.clientWidth)
             .height(container.clientHeight)
             .graphData({ nodes, links })
+            .showNavInfo(false)
             .nodeRelSize(4)
             .nodeVal(node => node.val || 2)
             .nodeColor(node => coraPalette[node.labelIdx % coraPalette.length])
-            .nodeLabel(node => `Paper ${node.id}<br>${node.label || ''}`)
+            .nodeOpacity(1.0)
+            .nodeResolution(16)
+            .nodeLabel(node => `
+                <div style="
+                    color: #1f2937; 
+                    background: rgba(255, 255, 255, 0.95); 
+                    padding: 6px 10px; 
+                    border: 1px solid #e5e7eb; 
+                    border-radius: 6px; 
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
+                    font-family: sans-serif; 
+                    font-size: 12px;
+                    pointer-events: none;">
+                  <strong>Paper ${node.id}</strong><br/>
+                  <span style="color: #6b7280;">Topic: ${node.label || 'Unknown'}</span>
+                </div>
+            `)            
             .linkWidth(0.5)
-            .linkOpacity(0.35)
-            .backgroundColor('#0b1120')
+            .linkColor(() => '#242424')
+            .linkOpacity(0.3)
+            .backgroundColor('#ffffff')     
             .onEngineStop(() => statusEl.textContent = `Loaded ${nodes.length} nodes / ${links.length} edges`);
-
           window.addEventListener('resize', () => {
             graph.width(container.clientWidth);
             graph.height(container.clientHeight);
@@ -1145,12 +1305,12 @@ window.GCN_LOCAL_PAYLOAD = {
     .force("center", d3.forceCenter(width / 2, height / 2));
 
   const link = svg.append("g")
-    .attr("stroke", "#374151")
-    .attr("stroke-width", 2)
-    .selectAll("line")
-    .data(links)
-    .enter().append("line")
-    .attr("class", "graph-link");
+      .attr("stroke", "#e5e7eb") // Light gray
+      .attr("stroke-width", 2)
+      .selectAll("line")
+      .data(links)
+      .enter().append("line")
+      .attr("class", "graph-link");
 
   const nodeGroup = svg.append("g")
     .selectAll("g")
@@ -1163,32 +1323,32 @@ window.GCN_LOCAL_PAYLOAD = {
     );
 
   nodeGroup.append("circle")
-    .attr("r", 18)
-    .attr("fill", "#020617")
-    .attr("stroke", "#9ca3af")
-    .attr("stroke-width", 2)
-    .attr("class", "graph-node")
-    .attr("id", d => "node-" + d.id);
+      .attr("r", 18)
+      .attr("fill", "#ffffff")
+      .attr("stroke", "#9ca3af") // Gray-400
+      .attr("stroke-width", 2)
+      .attr("class", "graph-node")
+      .attr("id", d => "node-" + d.id);
 
   nodeGroup.append("text")
-    .text(d => d.id)
-    .attr("text-anchor", "middle")
-    .attr("dy", ".35em")
-    .attr("fill", "#e5e7eb")
-    .style("font-family", "Roboto, sans-serif")
-    .style("font-weight", "bold")
-    .style("pointer-events", "none");
+      .text(d => d.id)
+      .attr("text-anchor", "middle")
+      .attr("dy", ".35em")
+      .attr("fill", "#374151") // Gray-700
+      .style("font-family", "-apple-system, BlinkMacSystemFont, sans-serif")
+      .style("font-weight", "600")
+      .style("pointer-events", "none");
 
   const nodeById = {};
   nodeGroup.each(function(d) { nodeById[d.id] = d3.select(this); });
 
   // Ходок
   const walker = svg.append("circle")
-    .attr("r", 7)
-    .attr("fill", "#facc15")
-    .attr("stroke", "#f97316")
-    .attr("stroke-width", 2)
-    .attr("opacity", 0);
+      .attr("r", 7)
+      .attr("fill", "#f59e0b") // Amber-500
+      .attr("stroke", "#ffffff")
+      .attr("stroke-width", 2)
+      .attr("opacity", 0);
 
   let centerNode = null;
 
@@ -1209,8 +1369,8 @@ window.GCN_LOCAL_PAYLOAD = {
 
   // Цветовая шкала по величине компоненты
   const valueScale = d3.scaleLinear()
-    .domain([0, 1])
-    .range(["#020617", "#22c55e"]);
+      .domain([0, 1])
+      .range(["#f3f4f6", "#22c55e"]); // Gray-100 -> Green-500
 
   lenSlider.addEventListener("input", () => {
     lenValue.textContent = lenSlider.value;
@@ -1224,23 +1384,23 @@ window.GCN_LOCAL_PAYLOAD = {
     centerNode = d;
 
     nodeGroup.selectAll("circle")
-      .interrupt()
-      .attr("r", 18)
-      .attr("fill", "#020617")
-      .attr("stroke", "#9ca3af")
-      .attr("stroke-width", 2);
+        .interrupt()
+        .attr("r", 18)
+        .attr("fill", "#ffffff")
+        .attr("stroke", "#9ca3af")
+        .attr("stroke-width", 2);
 
     const c = d3.select(this).select("circle");
-    c.attr("fill", "#22c55e")
-     .attr("stroke", "#16a34a")
-     .attr("stroke-width", 3)
-     .attr("r", 20)
-     .transition()
-     .duration(250)
-     .attr("r", 22)
-     .transition()
-     .duration(250)
-     .attr("r", 20);
+      c.attr("fill", "#dcfce7") // Light Green bg
+       .attr("stroke", "#16a34a") // Green border
+       .attr("stroke-width", 3)
+       .attr("r", 20)
+       .transition()
+       .duration(250)
+       .attr("r", 22)
+       .transition()
+       .duration(250)
+       .attr("r", 20);
 
     clearTokenHighlight(false);
     seqDiv.textContent = "Center node v = " + d.id +
@@ -1283,25 +1443,14 @@ window.GCN_LOCAL_PAYLOAD = {
       visitedPaths.push(path);
     }
 
-    // Подсвечиваем только объединение вершин (subgraph token), рёбра пока нет
-    nodeGroup.selectAll("circle")
-      .transition().duration(200)
-      .attr("fill", d => {
-        if (center && d.id === center.id) return "#22c55e";
-        return unionVisited.has(d.id) ? "#1d4ed8" : "#020617";
-      })
-      .attr("stroke", d => {
-        if (center && d.id === center.id) return "#16a34a";
-        return "#9ca3af";
-      })
-      .attr("stroke-width", d => (center && d.id === center.id) ? 3 : 2);
 
     // Рёбра: фоновые, будут загораться по мере прохождения walker’а
     link
-      .transition().duration(200)
-      .attr("stroke", "#374151")
-      .attr("stroke-width", 2)
-      .attr("opacity", 0.4);
+        .transition().duration(200)
+        .attr("stroke", "#e5e7eb")
+        .attr("stroke-width", 2)
+        .attr("opacity", 0.4);
+
 
     const nodesArr = Array.from(unionVisited).sort((a,b) => a-b);
     seqDiv.textContent =
@@ -1327,10 +1476,10 @@ window.GCN_LOCAL_PAYLOAD = {
     const svgMatrix = d3.select("#token-matrix");
     if (svgMatrix.empty()) return;
 
-    const rowHeight = 12;
-    const rowGap = 3;
-    const colWidth = 14;
-    const leftMargin = 22;
+    const rowHeight = 14;
+    const rowGap = 4;
+    const colWidth = 16;
+    const leftMargin = 28;
     const topMargin = 6;
 
     // Используем только те длины ℓ, для которых уже есть вектор
@@ -1352,29 +1501,31 @@ window.GCN_LOCAL_PAYLOAD = {
 
     // Подпись слева: ℓ = ...
     rowsEnter.append("text")
-      .attr("x", 0)
-      .attr("y", rowHeight - 2)
-      .attr("fill", "#9ca3af")
-      .attr("font-size", 8)
-      .attr("font-family", "monospace")
-      .text(d => "ℓ=" + d.L);
+        .attr("x", 0)
+        .attr("y", rowHeight - 3)
+        .attr("fill", "#4b5563") // Darker gray
+        .attr("font-size", 11)
+        .attr("font-family", "monospace")
+        .style("font-weight", "600")
+        .text(d => "ℓ=" + d.L);
 
     // Прямоугольники компонент вектора
     rowsEnter.each(function(rowData) {
-      const g = d3.select(this);
-      g.selectAll("rect")
-        .data(rowData.vector)
-        .enter()
-        .append("rect")
-        .attr("x", (v, j) => leftMargin + j * (colWidth + 2))
-        .attr("y", 0)
-        .attr("width", colWidth)
-        .attr("height", rowHeight)
-        .attr("rx", 2)
-        .attr("fill", v => valueScale(v))
-        .attr("stroke", "#4b5563")
-        .attr("stroke-width", 0.5);
-    });
+        const g = d3.select(this);
+        g.selectAll("rect")
+          .data(rowData.vector)
+          .enter()
+          .append("rect")
+          .attr("x", (v, j) => leftMargin + j * (colWidth + 2))
+          .attr("y", 0)
+          .attr("width", colWidth)
+          .attr("height", rowHeight)
+          .attr("rx", 2)
+          .attr("fill", v => valueScale(v))
+          .attr("stroke", "#d1d5db") // Light border
+          .attr("stroke-width", 1);
+      });
+
 
     rows.merge(rowsEnter)
       .attr("transform", (d, i) =>
@@ -1395,6 +1546,9 @@ window.GCN_LOCAL_PAYLOAD = {
       .attr("opacity", 1);
 
     let pathIndex = 0;
+    const nodesAlreadyHighlighted = new Set();
+
+    if (centerNode) nodesAlreadyHighlighted.add(centerNode.id);
 
     function runNextPath() {
       if (pathIndex >= paths.length) {
@@ -1422,17 +1576,25 @@ window.GCN_LOCAL_PAYLOAD = {
             const prevId = path[i - 1];
             highlightEdge(prevId, nodeId);
           }
-
           const circ = nSel.select("circle");
-          const baseFill = (centerNode && nodeId === centerNode.id)
-              ? "#22c55e"
-              : (unionVisited.has(nodeId) ? "#1d4ed8" : "#020617");
+            
+            // Если это центр - он всегда зеленый
+            // Если обычный узел - красим в голубой (Visited)
+            const finalColor = (centerNode && nodeId === centerNode.id) 
+                ? "#dcfce7" 
+                : "#dbeafe"; 
 
-          circ.transition().duration(150)
-            .attr("fill", "#f97316")
-            .transition().duration(250)
-            .attr("fill", baseFill);
-        }, t);
+            // Запоминаем, что этот узел мы посетили
+            nodesAlreadyHighlighted.add(nodeId);
+
+          // Анимация "вспышки" (оранжевый -> финальный цвет)
+            circ.transition().duration(150)
+              .attr("fill", "#fcd34d") // Вспышка (Amber)
+              .transition().duration(250)
+              .attr("fill", finalColor) // Остается голубым
+              .attr("stroke", (centerNode && nodeId === centerNode.id) ? "#16a34a" : "#2563eb"); // Синяя обводка
+
+          }, t);
 
         t += stepDuration;
       }
@@ -1453,7 +1615,7 @@ window.GCN_LOCAL_PAYLOAD = {
         return k === key1 || k === key2;
       })
       .transition().duration(200)
-      .attr("stroke", "#38bdf8")
+      .attr("stroke", "#0ea5e9")
       .attr("stroke-width", 3)
       .attr("opacity", 0.9);
   }
@@ -1472,8 +1634,8 @@ window.GCN_LOCAL_PAYLOAD = {
     nodeGroup.selectAll("circle")
       .transition().duration(200)
       .attr("fill", d => {
-        if (!resetCenter && centerNode && d.id === centerNode.id) return "#22c55e";
-        return "#020617";
+        if (!resetCenter && centerNode && d.id === centerNode.id) return "#dcfce7";
+        return "#ffffff";
       })
       .attr("stroke", d => {
         if (!resetCenter && centerNode && d.id === centerNode.id) return "#16a34a";
@@ -1486,7 +1648,7 @@ window.GCN_LOCAL_PAYLOAD = {
 
     link
       .transition().duration(200)
-      .attr("stroke", "#374151")
+      .attr("stroke", "#e5e7eb")
       .attr("stroke-width", 2)
       .attr("opacity", 0.7);
 
@@ -1839,7 +2001,15 @@ if (!container) return;
 }
 
         // Shared palette so ground-truth and predicted views match colors per labelIdx
-        const coraPalette = d3.schemeCategory10.concat(['#a855f7', '#14b8a6', '#fb7185', '#facc15']);
+        const coraPalette = [
+            '#e11d48', // Bright Pink/Red
+            '#d97706', // Amber
+            '#16a34a', // Bright Green
+            '#2563eb', // Bright Blue
+            '#9333ea', // Bright Purple
+            '#0891b2', // Cyan
+            '#db2777'  // Magenta
+        ];
 
         (async function() {
             const container = document.getElementById('cora-viz');
@@ -1849,14 +2019,32 @@ if (!container) return;
 
             const coraGraph = ForceGraph3D()
                 (container)
+                .showNavInfo(false)
                 .width(container.clientWidth)
                 .height(container.clientHeight)
                 .graphData(data)
                 .nodeColor(node => coraPalette[node.labelIdx % coraPalette.length])
-                .nodeLabel(node => `Paper ${node.id}\n${node.label || ''}`)
+                .nodeOpacity(1.0)
+                .nodeResolution(16)
+                .nodeLabel(node => `
+                  <div style="
+                      color: #1f2937; 
+                      background: rgba(255, 255, 255, 0.95); 
+                      padding: 6px 10px; 
+                      border: 1px solid #e5e7eb; 
+                      border-radius: 6px; 
+                      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
+                      font-family: sans-serif; 
+                      font-size: 12px;
+                      pointer-events: none;">
+                    <strong>Paper ${node.id}</strong><br/>
+                    <span style="color: #6b7280;">Topic: ${node.label || 'Unknown'}</span>
+                  </div>
+              `)
                 .linkWidth(0.5)
-                .linkOpacity(0.5)
-                .backgroundColor('#0b1120');
+                .linkColor(() => '#242424')
+                .linkOpacity(0.3)
+                .backgroundColor('#ffffff');
 
             window.resetCamera = () => {
                 coraGraph.cameraPosition({ x: 0, y: 0, z: 1000 }, { x: 0, y: 0, z: 0 }, 1000);
@@ -2177,38 +2365,39 @@ if (!container) return;
 
   const root = document.createElement('div');
   root.className = 'gmv-root';
+  root.style.fontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   mount.appendChild(root);
 
   loadD3().then(d3 => {
     const wrapper = d3.select(root).append('div').attr('class', 'gmv-wrapper')
       .style('display', 'flex')
       .style('flex-wrap', 'wrap')
-      .style('gap', '12px')
-      .style('align-items', 'flex-start')
-      .style('padding', '12px')
-      .style('box-sizing', 'border-box')
-      .style('height', '100%');
+      .style('gap', '0')
+      .style('align-items', 'stretch')
+      .style('height', '100%')
+      .style('background', '#ffffff');
 
     // ========== LEFT: Force-directed Graph ==========
     const graphPanel = wrapper.append('div').attr('class', 'gmv-panel')
       .style('flex', '1 1 420px')
       .style('min-width', '320px')
-      .style('background', 'rgba(15,23,42,0.92)')
-      .style('border', '1px solid #334155')
-      .style('padding', '12px')
+      .style('background', '#f9fafb')
+      .style('border-right', '1px solid #e5e7eb')
+      .style('padding', '20px')
       .style('box-sizing', 'border-box');
     graphPanel.append('div').attr('class', 'gmv-title')
-      .style('color', '#e5e7eb')
+      .style('color', '#1f2937')
       .style('font-weight', '700')
-      .style('margin-bottom', '8px')
-      .text('Token subgraph');
+      .style('margin-bottom', '12px')
+      .text('Token subgraph structure');
 
     const graphContainer = graphPanel.append('div')
       .style('position', 'relative')
       .style('width', '100%')
       .style('height', '400px')
-      .style('background', '#0b1120')
-      .style('border', '1px solid #334155')
+      .style('background', '#ffffff') // Белый фон графа
+      .style('border', '1px solid #e5e7eb')
+      .style('border-radius', '6px')
       .style('box-sizing', 'border-box');
 
     const svg = graphContainer.append('svg')
@@ -2227,23 +2416,23 @@ if (!container) return;
       target: l.target
     }));
 
-    // Force simulation - ТОЧНО КАК В RANDOM WALKS
+    // Force simulation 
     const simulation = d3.forceSimulation(nodes)
       .force("link", d3.forceLink(links).id(d => d.id).distance(80))
       .force("charge", d3.forceManyBody().strength(-300))
       .force("center", d3.forceCenter(210, 210))
       .force("collide", d3.forceCollide(25));
 
-    // Рёбра
+    // Edges (Default: Light Gray)
     const gLinks = svg.append('g').attr('class', 'links');
     const linkLines = gLinks.selectAll('line')
       .data(links)
       .enter().append('line')
       .attr('class', 'graph-link')
-      .attr('stroke', '#4b5563')
-      .attr('stroke-width', 1.5);
+      .attr('stroke', '#e5e7eb') // Light Gray
+      .attr('stroke-width', 2);
 
-    // Ноды
+    // Nodes (Default: White)
     const gNodes = svg.append('g').attr('class', 'nodes');
     const nodeGroup = gNodes.selectAll('g')
       .data(nodes)
@@ -2257,22 +2446,24 @@ if (!container) return;
 
     const nodeCircles = nodeGroup.append('circle')
       .attr('class', 'graph-node')
-      .attr('r', d => d.originalData.is_center ? 13 : 8)
-      .attr('fill', d => d.originalData.is_center ? '#ef4444' : '#3b82f6')
-      .attr('stroke', '#6b7280')
-      .attr('stroke-width', d => d.originalData.is_center ? 2.5 : 1.5)
+      .attr('r', d => d.originalData.is_center ? 14 : 9)
+      .attr('fill', '#ffffff') // White
+      // Center gets Green border, others Gray
+      .attr('stroke', d => d.originalData.is_center ? '#16a34a' : '#9ca3af') 
+      .attr('stroke-width', d => d.originalData.is_center ? 3 : 2)
       .attr('id', d => 'gcn-node-' + d.id);
 
-    // Подписи нод
+
+    // Labels (Dark Gray)
     const gLabels = svg.append('g').attr('class', 'labels');
     gLabels.selectAll('text')
       .data(nodes)
       .enter().append('text')
       .attr('text-anchor', 'middle')
-      .attr('dy', -15)
+      .attr('dy', -18)
       .attr('font-size', 11)
-      .attr('fill', '#e5e7eb')
-      .attr('font-weight', 'bold')
+      .attr('fill', '#374151')
+      .attr('font-weight', '600')
       .text(d => d.id);
 
     // Обновление позиций
@@ -2309,237 +2500,249 @@ if (!container) return;
       d.fy = null;
     }
 
-    // Функции для подсветки (вызываются из правой панели)
+    // Highlight logic
     function highlightNodes(nodeIds) {
       nodeCircles
         .transition().duration(200)
         .attr('r', d => nodeIds.includes(d.id) ? 
-          (d.originalData.is_center ? 16 : 11) : 
-          (d.originalData.is_center ? 13 : 8))
+          (d.originalData.is_center ? 17 : 12) : 
+          (d.originalData.is_center ? 14 : 9))
         .attr('fill', d => {
-          if (!nodeIds.includes(d.id)) return d.originalData.is_center ? '#ef4444' : '#3b82f6';
-          return '#facc15';
+          if (!nodeIds.includes(d.id)) return '#ffffff';
+          // Active Center -> Light Green, Active Neighbor -> Light Blue
+          return d.originalData.is_center ? '#dcfce7' : '#dbeafe'; 
         })
-        .attr('stroke-width', d => nodeIds.includes(d.id) ? 3 : 
-          (d.originalData.is_center ? 2.5 : 1.5));
+        .attr('stroke', d => {
+           if (!nodeIds.includes(d.id)) return d.originalData.is_center ? '#16a34a' : '#9ca3af';
+           // Active Center -> Green, Active Neighbor -> Blue
+           return d.originalData.is_center ? '#16a34a' : '#2563eb';
+        })
+        .attr('stroke-width', d => nodeIds.includes(d.id) ? 3 : (d.originalData.is_center ? 3 : 2));
     }
 
     function highlightEdge(u, v) {
-        linkLines
-          .transition().duration(200)
-          .style('stroke', d => {
-            const sid = typeof d.source === 'object' ? d.source.id : d.source;
-            const tid = typeof d.target === 'object' ? d.target.id : d.target;
-            const isMatch = (sid === u && tid === v) || (sid === v && tid === u);
-  return isMatch ? '#facc15' : '#4b5563';
-          })
-          .style('stroke-width', d => {
-            const sid = typeof d.source === 'object' ? d.source.id : d.source;
-            const tid = typeof d.target === 'object' ? d.target.id : d.target;
-            return (sid === u && tid === v) || (sid === v && tid === u) ? '3px' : '1.5px';
-          });
-      }
+      linkLines
+        .transition().duration(200)
+        .attr('stroke', d => {
+          const sid = typeof d.source === 'object' ? d.source.id : d.source;
+          const tid = typeof d.target === 'object' ? d.target.id : d.target;
+          const isMatch = (sid === u && tid === v) || (sid === v && tid === u);
+          return isMatch ? '#0ea5e9' : '#e5e7eb'; // Sky Blue for active edge
+        })
+        .attr('stroke-width', d => {
+          const sid = typeof d.source === 'object' ? d.source.id : d.source;
+          const tid = typeof d.target === 'object' ? d.target.id : d.target;
+          const isMatch = (sid === u && tid === v) || (sid === v && tid === u);
+          return isMatch ? 3 : 2;
+        });
+    }
 
     function resetGraph() {
       nodeCircles
         .interrupt()
         .transition().duration(200)
-        .attr('r', d => d.originalData.is_center ? 13 : 8)
-        .attr('fill', d => d.originalData.is_center ? '#ef4444' : '#3b82f6')
-        .attr('stroke-width', d => d.originalData.is_center ? 2.5 : 1.5);
+        .attr('r', d => d.originalData.is_center ? 14 : 9)
+        .attr('fill', '#ffffff') // Back to white
+        .attr('stroke', d => d.originalData.is_center ? '#16a34a' : '#9ca3af') // Keep center Green
+        .attr('stroke-width', d => d.originalData.is_center ? 3 : 2);
 
       linkLines
-    .interrupt()
-    .transition().duration(200)
-    .style('stroke', '#4b5563')  // ← STYLE вместо ATTR
-    .style('stroke-width', '1.5px');  // ← STYLE вместо ATTR
+        .interrupt()
+        .transition().duration(200)
+        .attr('stroke', '#e5e7eb')
+        .attr('stroke-width', 2);
     }
 
     function highlightMultipleEdges(edgePairs) {
-  // edgePairs = [[u1, v1], [u2, v2], ...]
-  console.log('Highlighting multiple edges:', edgePairs);
-  
-  linkLines
-    .transition().duration(200)
-    .style('stroke', d => {
-      const sid = typeof d.source === 'object' ? d.source.id : d.source;
-      const tid = typeof d.target === 'object' ? d.target.id : d.target;
-      
-      // Проверяем, есть ли этот edge в массиве пар
-      const isMatch = edgePairs.some(([u, v]) => 
-        (sid === u && tid === v) || (sid === v && tid === u)
-      );
-      
-      return isMatch ? '#facc15' : '#4b5563';
-    })
-    .style('stroke-width', d => {
-      const sid = typeof d.source === 'object' ? d.source.id : d.source;
-      const tid = typeof d.target === 'object' ? d.target.id : d.target;
-      
-      const isMatch = edgePairs.some(([u, v]) => 
-        (sid === u && tid === v) || (sid === v && tid === u)
-      );
-      
-      return isMatch ? '3px' : '1.5px';
-    });
-}
+      linkLines
+        .transition().duration(200)
+        .attr('stroke', d => {
+          const sid = typeof d.source === 'object' ? d.source.id : d.source;
+          const tid = typeof d.target === 'object' ? d.target.id : d.target;
+          const isMatch = edgePairs.some(([u, v]) => (sid === u && tid === v) || (sid === v && tid === u));
+          return isMatch ? '#0ea5e9' : '#e5e7eb'; // Sky Blue
+        })
+        .attr('stroke-width', d => {
+          const sid = typeof d.source === 'object' ? d.source.id : d.source;
+          const tid = typeof d.target === 'object' ? d.target.id : d.target;
+          const isMatch = edgePairs.some(([u, v]) => (sid === u && tid === v) || (sid === v && tid === u));
+          return isMatch ? 3 : 2;
+        });
+    }
 
 
-    // Легенда
+    // Legend
     const legend = graphPanel.append('div').attr('class', 'gmv-legend')
-      .style('margin-top', '8px')
+      .style('margin-top', '12px')
       .style('font-size', '12px')
-      .style('color', '#a5b4fc');
-    legend.append('span')
-      .style('color', '#a5b4fc')
-      .text('center is 0, others are neighbors');
+      .style('color', '#6b7280')
+      .style('display', 'flex')
+      .style('gap', '12px');
+    
+    // Center Legend Item
+    const l1 = legend.append('div').style('display','flex').style('align-items','center');
+    l1.append('span').style('width','8px').style('height','8px')
+      .style('background','#fff').style('border','2px solid #16a34a').style('border-radius','50%').style('margin-right','4px');
+    l1.append('span').style('font-size', '16px').text('Center (v)');
 
-    // ========== RIGHT: Steps (ВСЯ ТВОЯ ОРИГИНАЛЬНАЯ ЛОГИКА) ==========
+    // RIGHT: Steps
     const layer = payload.layers[0];
     const steps = layer.steps || [];
 
     const detailPanel = wrapper.append('div').attr('class', 'gmv-panel')
       .style('flex', '1 1 520px')
       .style('min-width', '320px')
-      .style('background', 'rgba(15,23,42,0.92)')
-      .style('border', '1px solid #334155')
-      .style('padding', '12px')
+      .style('background', '#ffffff')
+      .style('padding', '20px')
       .style('box-sizing', 'border-box');
+
     detailPanel.append('div').attr('class', 'gmv-title')
-      .style('color', '#e5e7eb')
+      .style('color', '#1f2937')
       .style('font-weight', '700')
-      .style('margin-bottom', '8px')
-      .text('Local GCN encoder: step by step');
+      .style('margin-bottom', '12px')
+      .text('Calculation Steps');
 
     const stepButtonsWrap = detailPanel.append('div').attr('class', 'gmv-step-buttons')
       .style('display', 'flex')
       .style('flex-wrap', 'wrap')
-      .style('gap', '8px')
-      .style('margin-bottom', '10px');
-    const shapeNote = detailPanel.append('div').attr('class', 'gmv-shape-note')
-      .style('color', '#a5b4fc')
-      .style('font-size', '12px')
-      .style('margin-bottom', '10px')
-      .text(`Token: k = ${layer.shapeInfo.k} nodes, feature dim = ${layer.shapeInfo.featureDim}, hidden dim = ${layer.shapeInfo.hiddenDim}`);
+      .style('gap', '6px')
+      .style('margin-bottom', '16px');
+
     const stepCard = detailPanel.append('div').attr('class', 'gmv-step-card')
-      .style('background', '#0b1120')
-      .style('border', '1px solid #334155')
-      .style('padding', '12px')
-      .style('box-sizing', 'border-box');
+      .style('background', '#f9fafb')
+      .style('border', '1px solid #e5e7eb')
+      .style('border-radius', '6px')
+      .style('padding', '16px');
 
     let activeStepId = steps.length ? steps[0].id : null;
     let hoverDetailDiv = null;
 
+    // --- MATRIX DRAWING (GREEN THEME) ---
     function drawMatrix(containerSel, step) {
       const matrix = step.matrix;
       containerSel.selectAll('*').remove();
       if (!matrix || !matrix.values || !matrix.values.length) {
-        containerSel.append('div').style('color', '#e5e7eb').text('no data');
+        containerSel.append('div').style('color', '#9ca3af').text('no data');
         return;
       }
 
       const numRows = matrix.values.length;
       const numCols = Array.isArray(matrix.values[0]) ? matrix.values[0].length : 0;
-      if (!numCols) {
-        containerSel.append('div').style('color', '#e5e7eb').text('bad matrix format');
-        return;
-      }
+      const rowLabels = matrix.rows || Array.from({length: numRows}, (_, i) => String(i));
+      const colLabels = matrix.cols || Array.from({length: numCols}, (_, j) => String(j));
 
-      const rowLabels = (matrix.rows && matrix.rows.length === numRows)
-        ? matrix.rows
-        : Array.from({length: numRows}, (_, i) => String(i));
-      const colLabels = (matrix.cols && matrix.cols.length === numCols)
-        ? matrix.cols
-        : Array.from({length: numCols}, (_, j) => String(j));
-
-      const size = 60;
+      const size = 50;
       const svgWidth = numCols * size;
       const svgHeight = numRows * size;
       const svgM = containerSel.append('svg')
         .attr('viewBox', `0 0 ${svgWidth} ${svgHeight}`)
-        .attr('width', svgWidth)
-        .attr('height', svgHeight);
+        .attr('width', svgWidth).attr('height', svgHeight);
 
       const g = svgM.append('g');
-
       const flat = matrix.values.flat();
-      const minVal = flat.length ? d3.min(flat) : -1;
+      const minVal = flat.length ? d3.min(flat) : 0;
       const maxVal = flat.length ? d3.max(flat) : 1;
 
+      // GREEN SCALE: White (#ffffff) -> Green (#22c55e)
       const colorScale = d3.scaleLinear()
-        .domain([minVal, 0, maxVal])
-        .range(['#1e3a8a', '#3b82f6', '#93c5fd'])  // тёмно-синий -> синий -> светло-голубой
+        .domain([minVal, maxVal])
+        .range(['#ffffff', '#22c55e']) 
         .clamp(true);
 
       matrix.values.forEach((row, i) => {
         row.forEach((val, j) => {
           const cell = g.append('g').attr('transform', `translate(${j * size},${i * size})`);
           const rect = cell.append('rect')
-            .attr('width', size - 2)
-            .attr('height', size - 2)
+            .attr('width', size - 1)
+            .attr('height', size - 1)
             .attr('fill', colorScale(val))
-            .attr('fill-opacity', 0.9)
-            .attr('stroke', '#020617')
-            .attr('stroke-width', 0.5)
+            .attr('stroke', '#e5e7eb')
+            .attr('stroke-width', 1)
             .style('cursor', 'pointer');
+
+          cell.append('text')
+            .attr('x', size/2).attr('y', size/2)
+            .attr('dy', '.35em').attr('text-anchor', 'middle')
+            .style('font-size', '10px').style('fill', '#374151')
+            .style('pointer-events', 'none')
+            .text(val.toFixed(2));
 
           rect.on('mouseenter', () => {
             const rowId = rowLabels[i];
             const colId = colLabels[j];
             handleCellHover(step, i, j, rowId, colId, val);
-            rect.attr('stroke', '#facc15').attr('stroke-width', 1.5);
+            rect.attr('stroke', '#16a34a').attr('stroke-width', 2); // Green highlight
           });
           rect.on('mouseleave', () => {
-            rect.attr('stroke', '#020617').attr('stroke-width', 0.5);
+            rect.attr('stroke', '#e5e7eb').attr('stroke-width', 1);
             resetGraph();
-            if (hoverDetailDiv) {
-              hoverDetailDiv.text('Hover over a cell to see computation details.');
-            }
+            if (hoverDetailDiv) hoverDetailDiv.text('Hover over a cell to see computation details.');
           });
-
-          rect.append('title').text(`[${rowLabels[i]}, ${colLabels[j]}] = ${val.toFixed(3)}`);
         });
       });
     }
 
-	    function drawVector(containerSel, step) {
-	      const vector = step.vector;
-	      containerSel.selectAll('*').remove();
-	      if (!vector || !vector.values) {
-	        containerSel.append('div').style('color', '#e5e7eb').text('no data');
-	        return;
-	      }
-      const cellSize = 60;
-      const svgWidth = Math.max(1, vector.values.length) * cellSize;
-      const svgHeight = 70;
+	  // --- VECTOR DRAWING (GREEN THEME) ---
+    function drawVector(containerSel, step) {
+      const vector = step.vector;
+      containerSel.selectAll('*').remove();
+      if (!vector || !vector.values) return;
+
+      const numRows = 1;
+      const numCols = vector.values.length;
+      const colLabels = vector.labels || Array.from({length: numCols}, (_, j) => String(j));
+
+      const size = 50; 
+      const svgWidth = numCols * size;
+      const svgHeight = numRows * size;
       const svgV = containerSel.append('svg')
         .attr('viewBox', `0 0 ${svgWidth} ${svgHeight}`)
-        .attr('width', svgWidth)
-        .attr('height', svgHeight);
-      
-      svgV.selectAll('rect').data(vector.values).enter().append('rect')
-        .attr('x', (_, idx) => idx * cellSize)
-        .attr('y', 10)
-        .attr('width', cellSize - 2)
-        .attr('height', 50)
-        .attr('fill', d => d >= 0 ? '#0ea5e9' : '#f97316')
-        .style('cursor', 'pointer')
-        .on('mouseenter', function(event, d) {
-          const idx = vector.values.indexOf(d);
-          const label = vector.labels[idx];
-          handleVectorHover(step, idx, label, d);
-          d3.select(this).attr('stroke', '#facc15').attr('stroke-width', 1.5);
-        })
-        .on('mouseleave', function() {
-          d3.select(this).attr('stroke', 'none');
-          resetGraph();
-          if (hoverDetailDiv) {
-            hoverDetailDiv.text('Hover over a column to see averaging details.');
-          }
-        })
-        .append('title')
-        .text((d, idx) => `${vector.labels[idx]} = ${d.toFixed(3)}`);
+        .attr('width', svgWidth).attr('height', svgHeight);
+
+      const g = svgV.append('g');
+
+      const flat = vector.values;
+      const minVal = flat.length ? d3.min(flat) : 0;
+      const maxVal = flat.length ? d3.max(flat) : 1;
+      const colorScale = d3.scaleLinear()
+        .domain([minVal, maxVal])
+        .range(['#ffffff', '#22c55e']) 
+        .clamp(true);
+
+      vector.values.forEach((val, j) => {
+          const i = 0;
+          const cell = g.append('g').attr('transform', `translate(${j * size},${i * size})`);
+
+          const rect = cell.append('rect')
+            .attr('width', size - 1)
+            .attr('height', size - 1)
+            .attr('fill', colorScale(val))
+            .attr('stroke', '#e5e7eb')
+            .attr('stroke-width', 1)
+            .style('cursor', 'pointer');
+
+          cell.append('text')
+            .attr('x', size/2).attr('y', size/2)
+            .attr('dy', '.35em').attr('text-anchor', 'middle')
+            .style('font-size', '10px').style('fill', '#374151')
+            .style('pointer-events', 'none')
+            .text(val.toFixed(2));
+
+          // Hover handlers
+          rect.on('mouseenter', () => {
+            const label = colLabels[j];
+            handleVectorHover(step, j, label, val);
+            rect.attr('stroke', '#16a34a').attr('stroke-width', 2);
+          });
+          
+          rect.on('mouseleave', () => {
+            rect.attr('stroke', '#e5e7eb').attr('stroke-width', 1);
+            resetGraph();
+            if (hoverDetailDiv) hoverDetailDiv.text('Hover over a cell to see computation details.');
+          });
+      });
     }
+
 
     function handleCellHover(step, rowIndex, colIndex, rowId, colId, value) {
       resetGraph();
@@ -2705,25 +2908,29 @@ if (!container) return;
       const step = steps.find(s => s.id === activeStepId) || steps[0];
       stepCard.selectAll('*').remove();
 
+      // Title (Dark Text)
       stepCard.append('div').attr('class', 'gmv-step-title')
-        .style('color', '#e5e7eb')
+        .style('color', '#1f2937') 
         .style('font-weight', '700')
         .style('margin-bottom', '6px')
         .text(step.title || activeStepId);
 
-      const formulaBox = stepCard.append('div').attr('class', 'gmv-formula');
+      // Formula Box (White with Green Text)
       if (step.formula) {
+        const formulaBox = stepCard.append('div').attr('class', 'gmv-formula')
+          .style('margin-bottom', '8px');
         if (step.formula.lhs && step.formula.rhs) {
           formulaBox.append('div')
-            .style('color', '#cbd5e1')
+            .style('color', '#16a34a') // Green formula
             .style('font-family', 'monospace')
             .style('font-size', '12px')
             .text(`${step.formula.lhs} = ${step.formula.rhs}`);
         }
       }
 
+      // Explain Text (Dark Gray)
       stepCard.append('div').attr('class', 'gmv-explain')
-        .style('color', '#cbd5e1')
+        .style('color', '#4b5563')
         .style('margin-top', '8px')
         .text(step.explain || '');
 
@@ -2734,16 +2941,17 @@ if (!container) return;
       } else if (step.type === 'vector') {
         drawVector(gridHolder, step);
       } else {
-        gridHolder.append('div').style('color', '#e5e7eb').text('No visualization.');
+        gridHolder.append('div').style('color', '#9ca3af').text('No visualization.');
       }
 
+      // Hover Detail (Dark Gray)
       hoverDetailDiv = stepCard.append('div')
         .attr('class', 'gmv-hover-detail')
-        .style('border-top', '1px solid rgba(148,163,184,0.5)')
+        .style('border-top', '1px solid #e5e7eb')
         .style('margin-top', '8px')
         .style('padding-top', '6px')
         .style('font-size', '11px')
-        .style('color', '#a5b4fc')
+        .style('color', '#4b5563')
         .style('min-height', '40px')
         .text('Hover over a cell to see calculation details.');
 
@@ -2758,19 +2966,23 @@ if (!container) return;
     stepButtonsWrap.selectAll('button')
       .data(stepMeta)
       .enter().append('button')
-      .style('background', d => d.id === activeStepId ? '#2563eb' : '#1e293b')
-      .style('border', '1px solid #334155')
-      .style('color', '#e5e7eb')
+      // Buttons: Active=Green, Inactive=White
+      .style('background', d => d.id === activeStepId ? '#16a34a' : '#ffffff')
+      .style('border', d => d.id === activeStepId ? '1px solid #16a34a' : '1px solid #d1d5db')
+      .style('color', d => d.id === activeStepId ? '#ffffff' : '#374151')
       .style('cursor', 'pointer')
       .style('padding', '6px 10px')
       .style('font-size', '12px')
       .style('font-family', 'monospace')
       .style('box-sizing', 'border-box')
+      .style('border-radius', '4px')
       .text(d => d.label)
       .on('click', (event, d) => {
         activeStepId = d.id;
         stepButtonsWrap.selectAll('button')
-          .style('background', x => x.id === activeStepId ? '#2563eb' : '#1e293b');
+          .style('background', x => x.id === activeStepId ? '#16a34a' : '#ffffff')
+          .style('color', x => x.id === activeStepId ? '#ffffff' : '#374151')
+          .style('border', x => x.id === activeStepId ? '1px solid #16a34a' : '1px solid #d1d5db');
         renderStep();
       });
 
@@ -2779,5 +2991,4 @@ if (!container) return;
     console.error(err);
   });
 })();
-
 </script>
