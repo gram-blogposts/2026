@@ -398,7 +398,7 @@ toc: false
   </div>
 
   <div class="figure-caption" style="margin-top: 0.75rem; color: #4b5563; font-size: 0.9rem; line-height: 1.5;">
-    <strong>Figure 3:</strong> Interactive visualization of the GCN local encoder. Select a step on the right to see how information propagates through the token subgraph \(\mathcal{T}_{\ell}(v)\).
+    <strong>Figure 3: Interactive visualization of the GCN local encoder.</strong> Select a step on the right to see how information propagates through the token subgraph \(\mathcal{T}_{\ell}(v)\).
   </div>
 
 </div>
