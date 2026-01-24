@@ -30,7 +30,6 @@ toc:
   - name: Two-Level Processing in Graph Mamba
   - name: End-to-End Architecture
   - name: Results on Cora
-  - name: References
 ---
 
 <script src="//unpkg.com/3d-force-graph"></script>
@@ -52,6 +51,9 @@ toc:
             This interactive article introduces <strong>Graph Mamba Networks</strong> - a novel approach that replaces traditional 
             message passing with <strong>Selective State Space Models (SSMs)</strong>. Instead of iteratively aggregating information 
             from neighbors, we linearize graph neighborhoods into sequences and process them efficiently using Mamba's selective gating mechanism. We empirically validate this methodology through experiments on the <strong>Cora citation network</strong> to demonstrate its efficacy in node classification tasks.
+        </p>
+<p>
+            References used in this tutorial: Graph Mamba <d-cite key="behrouz2024graphmambalearninggraphs"></d-cite> and the Cora dataset <d-cite key="cora2001"></d-cite>.
         </p>
 </section>
 <section style="width: 100%; margin: 0 auto;">
@@ -3326,8 +3328,3 @@ window.GCN_LOCAL_PAYLOAD = {
   });
 })();
 </script>
-
-## References
-
-- Graph Mamba: Towards Learning on Graphs with State Space Models <d-cite key="behrouz2024graphmambalearninggraphs"></d-cite>
-- The Cora Citation Dataset <d-cite key="cora2001"></d-cite>
