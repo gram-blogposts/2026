@@ -15,6 +15,7 @@ toc: false
 <script src="//unpkg.com/3d-force-graph"></script>
 <script src="//unpkg.com/d3"></script>
 <script>
+  // Distill shows a loading/progress bar; remove it once the DOM is ready so it doesn't cover the 3D canvases.
   document.addEventListener('DOMContentLoaded', () => {
     const progress = document.getElementById('progress');
     if (progress) progress.remove();
@@ -110,9 +111,9 @@ toc: false
   <p>
     To overcome these bottlenecks, we turn to <strong>Mamba</strong>, a recent architecture based on <strong>Selective State Space Models (SSMs)</strong>. Mamba was originally designed for sequence modeling, but its core properties are uniquely suited for graphs when we view them as sequences of structural snapshots.
   </p>
-  <p>
-    At first glance, Mamba looks like an RNN—it processes sequences step-by-step with a hidden state. But architecturally there's a key difference: Mamba is fully <strong>linear</strong> with no activation functions between recurrent steps. This small change (plus a selection mechanism that adds a data-dependent <em>keep gate</em> for filtering information) is what allows parallelization during training. So you get RNN's recurrent structure with Transformer-level quality.
-  </p>
+	  <p>
+	    At first glance, Mamba looks like an RNN—it processes sequences step-by-step with a hidden state. But architecturally there's a key difference: Mamba is fully <strong>linear</strong> with no activation functions between recurrent steps. This small change (plus a selection mechanism that adds a data-dependent <em>keep gate</em> for filtering information) is what allows parallelization during training. So you get RNN's recurrent structure with Transformer-level quality.
+	  </p>
 
   <ul style="margin-top: 1rem; margin-bottom: 1.5rem; line-height: 1.6; color: #374151;">
     <li style="margin-bottom: 0.75rem;">
@@ -131,9 +132,10 @@ toc: false
   </p>
 
 <details>
-<summary><strong>Python code:</strong> Loading the Cora dataset (from <code>tutorial/graph_mamba.ipynb</code>)</summary>
+<summary><strong>Python code:</strong> Loading the Cora dataset</summary>
 
-<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="kn">import</span> <span class="nn">torch</span>
+<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="c1"># Imports used throughout this notebook/tutorial.</span>
+<span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="n">nn</span>
 <span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="n">F</span>
 <span class="kn">from</span> <span class="nn">torch_geometric.datasets</span> <span class="kn">import</span> <span class="n">Planetoid</span>
@@ -148,10 +150,13 @@ toc: false
 <span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="kn">import</span> <span class="n">Rectangle</span>
 <span class="kn">from</span> <span class="nn">ipywidgets</span> <span class="kn">import</span> <span class="n">interact</span><span class="p">,</span> <span class="n">IntSlider</span>
 
+<span class="c1"># Choose where to run computations (Mac GPU = mps).</span>
 <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">device</span><span class="p">(</span><span class="s">"mps"</span><span class="p">)</span>
 
+<span class="c1"># Load the Cora citation network (one graph with node features + labels).</span>
 <span class="n">ds</span> <span class="o">=</span> <span class="n">Planetoid</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s">"./data"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">"Cora"</span><span class="p">)</span>
 <span class="n">data</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="c1"># Move the graph tensors to the chosen device.</span>
 <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 <span class="n">data</span></code></pre></figure>
 
@@ -164,8 +169,11 @@ toc: false
             Instead of fixed-radius neighbors, we use random walks to create multi-scale <strong>snapshots</strong> of the graph.
         </p>
 <p>
-            Fix a graph \(G=(V,E)\) and a center node \(v\in V\). Choose a maximum walk length \(m\in\mathbb{N}\) and a number of walks \(M\in\mathbb{N}\). For each length \(\ell\in\{0,1,\dots,m\}\), we sample \(M\) random walks of length \(\ell\) starting from \(v\). Let \[ T_{\ell}(v)\subseteq V \] denote the set of all vertices visited at least once by these walks (including \(v\)). The \(\ell\)-th <strong>structural snapshot</strong> is defined as the induced subgraph \[ \mathcal{T}_{\ell}(v)\;:=\;G\big[T_{\ell}(v)\big], \] which provides a stochastic, multi-scale view of the neighborhood of \(v\). (Later, this snapshot will serve as an input token). 
+            Fix a graph \(G=(V,E)\) and a center node \(v\in V\). Choose a maximum walk length \(m\in\mathbb{N}\) and a number of walks \(M\in\mathbb{N}\). For each length \(\ell\in\{0,1,\dots,m\}\), we sample \(M\) random walks of length \(\ell\) starting from \(v\). Let \[ T_{\ell}(v)\subseteq V \] denote the set of all vertices visited at least once by these walks (including \(v\)). The \(\ell\)-th <strong>structural snapshot</strong> is defined as the induced subgraph \[ \mathcal{T}_{\ell}(v)\;:=\;G\big[T_{\ell}(v)\big], \] which provides a stochastic, multi-scale view of the neighborhood of \(v\). (Later, this snapshot will serve as an input token).
         </p>
+<p>
+            <strong>Note:</strong> The demo code below starts from walk length \(\ell=1\) for simplicity; \(\ell=0\) would just be the trivial token containing only the center node \(v\).
+</p>
 <div class="info-box"> 
   <p>
     <strong>Interpretation (multi-scale view):</strong>
@@ -181,22 +189,28 @@ toc: false
 <details>
 <summary><strong>Python code:</strong> Neighborhood sampling (random walk tokenization)</summary>
 
-<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="n">edge_index</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">edge_index</span><span class="p">.</span><span class="n">cpu</span><span class="p">()</span>
+<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="c1"># Build token neighborhoods using random walks.</span>
+<span class="c1"># We keep edges on CPU here because random_walk is typically run on CPU.</span>
+<span class="n">edge_index</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">edge_index</span><span class="p">.</span><span class="n">cpu</span><span class="p">()</span>
 <span class="n">n</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">num_nodes</span>
 
 <span class="n">max_walk_length</span> <span class="o">=</span> <span class="mi">3</span>
 <span class="n">num_of_walks</span> <span class="o">=</span> <span class="mi">4</span>
 
+<span class="c1"># tokens[node][walk_length] will store the set of nodes we reached from that start node.</span>
 <span class="n">tokens</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="p">:</span> <span class="p">{}</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)}</span>
 
 <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">walk_length</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_walk_length</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="c1"># Merge several random walks so the token isn't too noisy from one walk.</span>
         <span class="n">induced_graph</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
 
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_of_walks</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="c1"># One random walk starting from node.</span>
             <span class="n">walk</span> <span class="o">=</span> <span class="n">random_walk</span><span class="p">(</span><span class="n">edge_index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">edge_index</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">torch</span><span class="p">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">node</span><span class="p">]),</span> <span class="n">walk_length</span><span class="o">=</span><span class="n">walk_length</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">induced_graph</span> <span class="o">|=</span> <span class="nb">set</span><span class="p">(</span><span class="n">walk</span><span class="p">.</span><span class="n">tolist</span><span class="p">())</span>
 
+        <span class="c1"># Save the node-set for this token (we'll turn it into a tiny induced subgraph later).</span>
         <span class="n">tokens</span><span class="p">[</span><span class="n">node</span><span class="p">][</span><span class="n">walk_length</span><span class="p">]</span> <span class="o">=</span> <span class="n">induced_graph</span></code></pre></figure>
 
 </details>
@@ -319,20 +333,28 @@ toc: false
 <details>
 <summary><strong>Python code:</strong> Local encoder (GCN) for a token subgraph</summary>
 
-<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="k">class</span> <span class="nc">LocalEncoder</span><span class="p">(</span><span class="n">torch</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">Module</span><span class="p">):</span>
+<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="c1"># Local encoder: take a token (a small subgraph) and turn it into one vector.</span>
+<span class="c1"># in_dim = size of input node features; hidden_dim = size of the output token vector.</span>
+<span class="k">class</span> <span class="nc">LocalEncoder</span><span class="p">(</span><span class="n">torch</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">Module</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="o">=</span><span class="mi">64</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">().</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="p">.</span><span class="n">gcn_layer_1</span> <span class="o">=</span> <span class="n">GCNConv</span><span class="p">(</span><span class="n">in_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">)</span>
         <span class="bp">self</span><span class="p">.</span><span class="n">gcn_layer_2</span> <span class="o">=</span> <span class="n">GCNConv</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">encode_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="c1"># token is a set/list of node ids. Convert it to a tensor so we can index into data.</span>
         <span class="n">token</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">tensor</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">token</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="p">.</span><span class="nb">long</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+        <span class="c1"># Take the features for just the nodes inside this token.</span>
         <span class="n">neighborhood_features</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">x</span><span class="p">[</span><span class="n">token</span><span class="p">]</span>
 
+        <span class="c1"># Keep only edges where BOTH endpoints are inside this token (so we get the induced subgraph).</span>
         <span class="n">mask</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">isin</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">edge_index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">token</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">torch</span><span class="p">.</span><span class="n">isin</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">edge_index</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">token</span><span class="p">)</span>
         <span class="n">edges_in_token</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">edge_index</span><span class="p">[:,</span> <span class="n">mask</span><span class="p">]</span>
 
+        <span class="c1"># PyG expects node ids inside a subgraph to be numbered 0..k-1.</span>
+        <span class="c1"># So we remap global node ids -&gt; local ids (within this token).</span>
         <span class="n">idx_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">old</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">old</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">token</span><span class="p">.</span><span class="n">tolist</span><span class="p">())}</span>
+        <span class="c1"># Rebuild the edge list using the local ids.</span>
         <span class="n">sub_edge_index</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">tensor</span><span class="p">(</span>
             <span class="p">[[</span><span class="n">idx_map</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">u</span><span class="p">)]</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">edges_in_token</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
             <span class="p">[</span><span class="n">idx_map</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">)]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">edges_in_token</span><span class="p">[</span><span class="mi">1</span><span class="p">]]],</span>
@@ -340,7 +362,9 @@ toc: false
             <span class="n">device</span><span class="o">=</span><span class="n">device</span>
         <span class="p">)</span>
 
+        <span class="c1"># Create a standalone mini graph for this token (features + token-internal edges).</span>
         <span class="n">induced_graph</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">neighborhood_features</span><span class="p">,</span> <span class="n">edge_index</span><span class="o">=</span><span class="n">sub_edge_index</span><span class="p">)</span>
+        <span class="c1"># Run a small GCN on the token, then average node embeddings to get ONE vector per token.</span>
         <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">gcn_layer_1</span><span class="p">(</span><span class="n">induced_graph</span><span class="p">.</span><span class="n">x</span><span class="p">,</span> <span class="n">induced_graph</span><span class="p">.</span><span class="n">edge_index</span><span class="p">).</span><span class="n">relu</span><span class="p">()</span>
         <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">gcn_layer_2</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">induced_graph</span><span class="p">.</span><span class="n">edge_index</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">h</span><span class="p">.</span><span class="n">mean</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
@@ -360,7 +384,9 @@ toc: false
 <details>
 <summary><strong>Python code:</strong> Token ordering (reverse-by-walk-length)</summary>
 
-<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="n">ordered_token_embeddings</span> <span class="o">=</span> <span class="p">{}</span>
+<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="c1"># Put longer-walk tokens first, and the closest-to-node token last.</span>
+<span class="c1"># That way, the final step in the sequence is the most local information.</span>
+<span class="n">ordered_token_embeddings</span> <span class="o">=</span> <span class="p">{}</span>
 
 <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
     <span class="n">embeddings</span> <span class="o">=</span> <span class="p">[]</span>
@@ -466,7 +492,9 @@ toc: false
 <details>
 <summary><strong>Python code:</strong> Selective State Space block</summary>
 
-<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="k">class</span> <span class="nc">SelectiveStateSpaceBlock</span><span class="p">(</span><span class="n">nn</span><span class="p">.</span><span class="n">Module</span><span class="p">):</span>
+<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="c1"># Note that this code is a Mamba inspired toy block (gated memory), not the exact SSM math written above.</span>
+<span class="c1"># It reads token vectors one-by-one and keeps / overwrites an internal state using learned gates.</span>
+<span class="k">class</span> <span class="nc">SelectiveStateSpaceBlock</span><span class="p">(</span><span class="n">nn</span><span class="p">.</span><span class="n">Module</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">state_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">().</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="p">.</span><span class="n">token_dim</span> <span class="o">=</span> <span class="n">token_dim</span>
@@ -477,13 +505,16 @@ toc: false
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token_sequence</span><span class="p">:</span> <span class="n">torch</span><span class="p">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="p">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">batch_size</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">token_dim</span> <span class="o">=</span> <span class="n">token_sequence</span><span class="p">.</span><span class="n">shape</span>
 
+        <span class="c1"># Turn each token into gate values (3 separate controllers per step).</span>
         <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">token_to_params</span><span class="p">(</span><span class="n">token_sequence</span><span class="p">)</span>
         <span class="n">keep_gate</span><span class="p">,</span> <span class="n">write_gate</span><span class="p">,</span> <span class="n">decay_gate</span> <span class="o">=</span> <span class="n">params</span><span class="p">.</span><span class="n">chunk</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
+        <span class="c1"># Squash gates into sensible ranges.</span>
         <span class="n">keep_gate</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">keep_gate</span><span class="p">)</span>
         <span class="n">write_gate</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">write_gate</span><span class="p">)</span>
         <span class="n">decay_gate</span> <span class="o">=</span> <span class="n">F</span><span class="p">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">decay_gate</span><span class="p">)</span>
 
+        <span class="c1"># Start with an empty memory (one state vector per item in the batch).</span>
         <span class="n">state</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">zeros</span><span class="p">(</span>
             <span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">state_dim</span><span class="p">,</span>
             <span class="n">device</span><span class="o">=</span><span class="n">token_sequence</span><span class="p">.</span><span class="n">device</span><span class="p">,</span>
@@ -492,15 +523,17 @@ toc: false
         <span class="n">outputs</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">seq_len</span><span class="p">):</span>
-            <span class="c1"># s_t = decay_t * s_{t-1} + keep_t * x_t
-</span>            <span class="n">state</span> <span class="o">=</span> <span class="n">decay_gate</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span> <span class="o">*</span> <span class="n">state</span> <span class="o">+</span> <span class="n">keep_gate</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span> <span class="o">*</span> <span class="n">token_sequence</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span>
-            <span class="c1"># y_t = write_t * s_t
-</span>            <span class="n">current_output</span> <span class="o">=</span> <span class="n">write_gate</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span> <span class="o">*</span> <span class="n">state</span>
+            <span class="c1"># Update memory: keep some of the previous state, mix in some of the current token.</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="n">decay_gate</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span> <span class="o">*</span> <span class="n">state</span> <span class="o">+</span> <span class="n">keep_gate</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span> <span class="o">*</span> <span class="n">token_sequence</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span>
+            <span class="c1"># Produce an output for this step (what we write out from the state).</span>
+            <span class="n">current_output</span> <span class="o">=</span> <span class="n">write_gate</span><span class="p">[:,</span> <span class="n">t</span><span class="p">]</span> <span class="o">*</span> <span class="n">state</span>
             <span class="n">outputs</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">current_output</span><span class="p">)</span>
 
-        <span class="n">outputs</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">stack</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>          <span class="c1"># (B, L, state_dim)
-</span>        <span class="n">token_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">state_to_token</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>   <span class="c1"># (B, L, token_dim)
-</span>        <span class="k">return</span> <span class="n">token_outputs</span></code></pre></figure>
+        <span class="c1"># Stack per-step outputs back into a sequence.</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">stack</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Map the internal state back to the token vector size.</span>
+        <span class="n">token_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">state_to_token</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">token_outputs</span></code></pre></figure>
 
 </details>
 <section style="width: 100%; margin-top: 6rem; margin-bottom: 2rem;">
@@ -575,7 +608,7 @@ toc: false
     </div>
     <div class="figure-caption" style="margin-top: 8px; text-align: left; color: #666; font-size: 0.9em;">
       <strong>Figure 4: Selective gating in Mamba.</strong>
-      The model reads tokens sequentially and decides via an input-dependent gate whether to write new information into the hidden state or keep it unchanged. Use “Replay” to step through how relevant tokens update the state while noisy tokens are filtered out.
+      The model reads tokens sequentially and decides via an input-dependent gate whether to write new information into the hidden state or keep it unchanged. Use Replay to step through how relevant tokens update the state while noisy tokens are filtered out.
     </div>
 
   </div>
@@ -596,7 +629,9 @@ toc: false
 <details>
 <summary><strong>Python code:</strong> Bidirectional Mamba</summary>
 
-<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="k">class</span> <span class="nc">BidirectionalMamba</span><span class="p">(</span><span class="n">nn</span><span class="p">.</span><span class="n">Module</span><span class="p">):</span>
+<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="c1"># Bidirectional wrapper: run an SSM forward and backward over the same token sequence and fuse the results.</span>
+<span class="c1"># This reduces causal bias from arbitrary random-walk ordering.</span>
+<span class="k">class</span> <span class="nc">BidirectionalMamba</span><span class="p">(</span><span class="n">nn</span><span class="p">.</span><span class="n">Module</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">state_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">().</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="p">.</span><span class="n">norm_tokens</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">token_dim</span><span class="p">)</span>
@@ -605,19 +640,19 @@ toc: false
         <span class="bp">self</span><span class="p">.</span><span class="n">output_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">token_dim</span><span class="p">,</span> <span class="n">token_dim</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token_sequence</span><span class="p">:</span> <span class="n">torch</span><span class="p">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="p">.</span><span class="n">Tensor</span><span class="p">:</span>
-        <span class="s">"""
-        token_sequence: (batch, seq_len, token_dim)
-        seq_len = max_walk_length
-        """</span>
+        <span class="c1"># Normalize token vectors before sending them into the two SSM directions.</span>
         <span class="n">token_sequence</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">norm_tokens</span><span class="p">(</span><span class="n">token_sequence</span><span class="p">)</span>
 
+        <span class="c1"># Forward direction: reads tokens from first to last.</span>
         <span class="n">forward_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">forward_ssm</span><span class="p">(</span><span class="n">token_sequence</span><span class="p">)</span>
 
+        <span class="c1"># Backward direction: flip the sequence, run the same kind of SSM, then flip back.</span>
         <span class="n">reversed_tokens</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">flip</span><span class="p">(</span><span class="n">token_sequence</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
         <span class="n">backward_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">backward_ssm</span><span class="p">(</span><span class="n">reversed_tokens</span><span class="p">)</span>
 
         <span class="n">backward_tokens</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">flip</span><span class="p">(</span><span class="n">backward_tokens</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 
+        <span class="c1"># Fuse the two views (here: simple add) and mix with a final linear layer.</span>
         <span class="n">mixed_tokens</span> <span class="o">=</span> <span class="n">forward_tokens</span> <span class="o">+</span> <span class="n">backward_tokens</span>
         <span class="n">mixed_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">output_proj</span><span class="p">(</span><span class="n">mixed_tokens</span><span class="p">)</span>
         
@@ -716,6 +751,10 @@ toc: false
     This stage facilitates <strong>long-range dependency modeling</strong> across the entire graph. It creates a "virtual" channel where any node can influence any other node via the recurrent state without deep stacks of message-passing layers. For graph-level tasks, the outputs of this stage are simply pooled to form a single graph vector \(\mathbf{h}_G\).
   </p> 
 </div> 
+
+<p style="margin-top: 0.75rem; color: #4b5563;">
+  <strong>Implementation note:</strong> Our runnable demo focuses on Level&nbsp;1 (token aggregation for node classification). Level&nbsp;2 is included here as the conceptual extension.
+</p>
 
 <div class="key-takeaway" style="margin-top: 3rem">
   This hierarchical design decouples local feature extraction from global reasoning. The first level learns optimal local structural descriptors, while the second level enables efficient, linear-time global information propagation across the entire graph structure.
@@ -865,9 +904,11 @@ toc: false
 <details>
 <summary><strong>Python code:</strong> Training loop (Graph Mamba on Cora)</summary>
 
-<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="n">num_classes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">y</span><span class="p">.</span><span class="nb">max</span><span class="p">().</span><span class="n">item</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="c1"># Classifier head: take the node embedding (64 numbers) and output class scores.</span>
+<span class="n">num_classes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">y</span><span class="p">.</span><span class="nb">max</span><span class="p">().</span><span class="n">item</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
 <span class="n">head</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="n">num_classes</span><span class="p">).</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 
+<span class="c1"># Train everything together: local encoder + sequence block + classifier.</span>
 <span class="n">opt</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">optim</span><span class="p">.</span><span class="n">Adam</span><span class="p">(</span>
     <span class="nb">list</span><span class="p">(</span><span class="n">local_encoder</span><span class="p">.</span><span class="n">parameters</span><span class="p">())</span> <span class="o">+</span>
     <span class="nb">list</span><span class="p">(</span><span class="n">mamba_layer</span><span class="p">.</span><span class="n">parameters</span><span class="p">())</span> <span class="o">+</span>
@@ -881,6 +922,7 @@ toc: false
 <span class="n">best_state</span> <span class="o">=</span> <span class="bp">None</span>
 
 <span class="k">def</span> <span class="nf">build_token_batch</span><span class="p">(</span><span class="n">node_ids</span><span class="p">):</span>
+    <span class="c1"># For each node id, build its token sequence by encoding several walk-length tokens with the LocalEncoder.</span>
     <span class="n">seqs</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">node_ids</span><span class="p">:</span>
         <span class="n">token_vectors</span> <span class="o">=</span> <span class="p">[]</span>
@@ -895,22 +937,29 @@ toc: false
 <span class="n">train_acc_hist</span><span class="p">,</span>  <span class="n">val_acc_hist</span>  <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
 
 <span class="k">for</span> <span class="n">ep</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">EPOCHS</span><span class="p">):</span>
+    <span class="c1"># Training pass.</span>
     <span class="n">local_encoder</span><span class="p">.</span><span class="n">train</span><span class="p">();</span> <span class="n">mamba_layer</span><span class="p">.</span><span class="n">train</span><span class="p">();</span> <span class="n">head</span><span class="p">.</span><span class="n">train</span><span class="p">()</span>
+    <span class="c1"># Shuffle nodes before batching.</span>
     <span class="n">perm</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">randperm</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
     <span class="n">tot_loss</span> <span class="o">=</span> <span class="n">tot_cnt</span> <span class="o">=</span> <span class="n">corr</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">BATCH</span><span class="p">):</span>
+        <span class="c1"># Take a chunk of node ids; then keep only those that belong to the training split.</span>
         <span class="n">bn</span> <span class="o">=</span> <span class="n">perm</span><span class="p">[</span><span class="n">s</span><span class="p">:</span><span class="n">s</span><span class="o">+</span><span class="n">BATCH</span><span class="p">]</span>
         <span class="n">bn</span> <span class="o">=</span> <span class="n">bn</span><span class="p">[</span><span class="n">data</span><span class="p">.</span><span class="n">train_mask</span><span class="p">[</span><span class="n">bn</span><span class="p">]]</span>
 
-        <span class="n">x</span> <span class="o">=</span> <span class="n">build_token_batch</span><span class="p">(</span><span class="n">bn</span><span class="p">.</span><span class="n">tolist</span><span class="p">())</span>    <span class="c1"># (B, L, 64)
-</span>        <span class="n">x</span> <span class="o">=</span> <span class="n">mamba_layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>                    <span class="c1"># (B, L, 64)
-</span>        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>                       <span class="c1"># (B, 64)
-</span>        <span class="n">y</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">y</span><span class="p">[</span><span class="n">bn</span><span class="p">]</span>
+        <span class="c1"># Build token sequences for this mini-batch (this is the expensive step).</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">build_token_batch</span><span class="p">(</span><span class="n">bn</span><span class="p">.</span><span class="n">tolist</span><span class="p">())</span>
+        <span class="c1"># Run the sequence model over tokens.</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">mamba_layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="c1"># Use the last step as the final node embedding.</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">y</span><span class="p">[</span><span class="n">bn</span><span class="p">]</span>
 
         <span class="n">logits</span> <span class="o">=</span> <span class="n">head</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
         <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 
+        <span class="c1"># Backprop + optimizer step.</span>
         <span class="n">opt</span><span class="p">.</span><span class="n">zero_grad</span><span class="p">()</span>
         <span class="n">loss</span><span class="p">.</span><span class="n">backward</span><span class="p">()</span>
         <span class="n">opt</span><span class="p">.</span><span class="n">step</span><span class="p">()</span>
@@ -924,8 +973,8 @@ toc: false
     <span class="n">train_loss_hist</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">train_loss</span><span class="p">)</span>
     <span class="n">train_acc_hist</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">train_acc</span><span class="p">)</span>
 
-    <span class="c1"># val
-</span>    <span class="n">local_encoder</span><span class="p">.</span><span class="nb">eval</span><span class="p">();</span> <span class="n">mamba_layer</span><span class="p">.</span><span class="nb">eval</span><span class="p">();</span> <span class="n">head</span><span class="p">.</span><span class="nb">eval</span><span class="p">()</span>
+    <span class="c1"># Validation pass (no gradients).</span>
+    <span class="n">local_encoder</span><span class="p">.</span><span class="nb">eval</span><span class="p">();</span> <span class="n">mamba_layer</span><span class="p">.</span><span class="nb">eval</span><span class="p">();</span> <span class="n">head</span><span class="p">.</span><span class="nb">eval</span><span class="p">()</span>
     <span class="k">with</span> <span class="n">torch</span><span class="p">.</span><span class="n">no_grad</span><span class="p">():</span>
         <span class="n">val_nodes</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)[</span><span class="n">data</span><span class="p">.</span><span class="n">val_mask</span><span class="p">].</span><span class="n">tolist</span><span class="p">()</span>
         <span class="n">v_loss</span> <span class="o">=</span> <span class="n">v_cnt</span> <span class="o">=</span> <span class="n">v_corr</span> <span class="o">=</span> <span class="mi">0</span>
@@ -1025,7 +1074,9 @@ toc: false
 <details>
 <summary><strong>Python code:</strong> Build node representations after training</summary>
 
-<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="n">local_encoder</span><span class="p">.</span><span class="nb">eval</span><span class="p">()</span>
+<figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="c1"># Inference-time embedding build: compute token sequences for all nodes and take the last SSM step as the node embedding.</span>
+<span class="c1"># Shapes: all_nodes_token_seqs [N, L, d] -> mixed_token_seqs [N, L, d] -> node_representations [N, d].</span>
+<span class="n">local_encoder</span><span class="p">.</span><span class="nb">eval</span><span class="p">()</span>
 <span class="n">mamba_layer</span><span class="p">.</span><span class="nb">eval</span><span class="p">()</span>
 
 <span class="k">with</span> <span class="n">torch</span><span class="p">.</span><span class="n">no_grad</span><span class="p">():</span>
@@ -1049,6 +1100,7 @@ toc: false
 <summary><strong>Python code:</strong> Export predictions for the website visualization</summary>
 
 <figure class="highlight"><pre style="white-space: pre; overflow-x: auto;"><code class="language-python" style="white-space: pre; display: block;"><span class="c1"># Export predicted labels to cora_visualization_pred.json for the website
+# Output JSON schema matches ForceGraph3D: { nodes: [{id,label,labelIdx,val}], links: [{source,target}] }.
 </span><span class="n">label_names</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s">"Case_Based"</span><span class="p">,</span> <span class="s">"Genetic_Algorithms"</span><span class="p">,</span> <span class="s">"Neural_Networks"</span><span class="p">,</span>
     <span class="s">"Probabilistic_Methods"</span><span class="p">,</span> <span class="s">"Reinforcement_Learning"</span><span class="p">,</span>
@@ -1163,6 +1215,7 @@ toc: false
 
 <script>
       (function() {
+      // Render the classified Cora graph in 3D by fetching the model's prediction JSON produced by the code above.
       const container = document.getElementById('cora-classified-viz');
       const statusEl = document.getElementById('cora-classified-status');
       if (!container || !statusEl || typeof ForceGraph3D !== 'function') return;
@@ -1174,6 +1227,7 @@ toc: false
         .then(payload => {
           const nodes = payload.nodes || [];
           const links = payload.links || [];
+          // ForceGraph3D API is fluent: configure canvas size, data, and per-node/link render attributes.
           const graph = ForceGraph3D()(container)
             .width(container.clientWidth)
             .height(container.clientHeight)
@@ -1204,6 +1258,7 @@ toc: false
             .linkOpacity(0.3)
             .backgroundColor('#ffffff')     
             .onEngineStop(() => statusEl.textContent = `Loaded ${nodes.length} nodes / ${links.length} edges`);
+          // Keep the canvas responsive: recompute width/height from the container on resize.
           window.addEventListener('resize', () => {
             graph.width(container.clientWidth);
             graph.height(container.clientHeight);
@@ -1215,9 +1270,13 @@ toc: false
     })();
     </script>
 <script>
+// Static payload for the GCN local encoder widget below.
+// This is a tiny, hand-authored toy subgraph so the visualization can show shapes/steps deterministically.
 window.GCN_LOCAL_PAYLOAD = {
+  // Which center node is being explained (in the toy example graph).
   "nodeId": 0,
   "graph": {
+    // nodes: include fixed 2D positions (x,y) used for drawing and some metadata (distance/degree).
     "nodes": [
       {"id": 0, "x": 0.0, "y": 0.0, "distance": 0, "is_center": true, "degree": 3},
       {"id": 1, "x": -0.8, "y": 0.5, "distance": 1, "is_center": false, "degree": 3},
@@ -1226,6 +1285,7 @@ window.GCN_LOCAL_PAYLOAD = {
       {"id": 4, "x": 1.2, "y": -0.3, "distance": 2, "is_center": false, "degree": 2},
       {"id": 5, "x": 0.0, "y": -0.8, "distance": 1, "is_center": false, "degree": 1}
     ],
+    // links: simple undirected-looking edges (the renderer treats these as connections).
     "links": [
       {"source": 0, "target": 1},
       {"source": 0, "target": 2},
@@ -1236,10 +1296,12 @@ window.GCN_LOCAL_PAYLOAD = {
       {"source": 3, "target": 4}
     ]
   },
+  // layers: per-GCN-layer explanation frames (token membership + expected tensor shapes + step-by-step visuals).
   "layers": [
     {
       "walkLength": 2,
       "tokenNodes": [0, 1, 2, 3, 4, 5],
+      // shapeInfo: k = |tokenNodes|, featureDim = F, hiddenDim = d for this visualization (toy numbers here).
       "shapeInfo": {"k": 6, "featureDim": 3, "hiddenDim": 3},
       "steps": [
         {
@@ -1574,7 +1636,7 @@ window.GCN_LOCAL_PAYLOAD = {
 
     clearTokenHighlight(false);
     seqDiv.textContent = "Center node v = " + d.id +
-      ". Choose ℓ and M, then press “Generate token”.";
+      ". Choose ℓ and M, then press Generate token.";
 
     // New center -> reset matrix (s = 1)
     tokenMatrix = new Array(maxL + 1).fill(null);
