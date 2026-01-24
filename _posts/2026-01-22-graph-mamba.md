@@ -3318,3 +3318,14 @@ window.GCN_LOCAL_PAYLOAD = {
   });
 })();
 </script>
+
+<section class="article-width" id="references" style="margin-top: 6rem; margin-bottom: 2rem;">
+  <h2>References</h2>
+  <ul>
+    <li>
+      Graph Mamba: Towards Learning on Graphs with State Space Models
+      <d-cite key="behrouz2024graphmambalearninggraphs"></d-cite>
+      <a href="https://arxiv.org/abs/2402.08678">https://arxiv.org/abs/2402.08678</a>
+    </li>
+  </ul>
+</section>
