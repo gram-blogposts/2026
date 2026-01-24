@@ -1,7 +1,7 @@
 ---
 layout: distill
-title: "Graph Mamba: Rethinking Graph Learning"
-description: "Rethinking Graph Learning with Selective State Space Models"
+title: Graph Mamba - Rethinking Graph Learning
+description: Graph Mamba replaces message passing by turning local subgraphs into token sequences processed by selective state space models. This post explains the idea with an interactive Cora demo and a minimal reference implementation.
 date: 2026-01-22
 
 authors:
@@ -9,7 +9,7 @@ authors:
 
 bibliography: 2026-01-22-graph-mamba.bib
 related_posts: false
-toc: false
+toc: true
 ---
 
 <script src="//unpkg.com/3d-force-graph"></script>
