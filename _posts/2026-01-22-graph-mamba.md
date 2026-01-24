@@ -9,7 +9,28 @@ authors:
 
 bibliography: 2026-01-22-graph-mamba.bib
 related_posts: false
-toc: true
+toc:
+  - name: Foundations - Understanding Graphs and Sequence Models
+    subsections:
+      - name: The Limitations of Message Passing
+      - name: Enter Mamba - The Selective State Space Model
+  - name: From Random Walks to Tokens
+  - name: Encoding Subgraphs with Local Encoders
+    subsections:
+      - name: GCN Encoder - Three Phases
+  - name: The Mamba Block - Selective State Spaces
+    subsections:
+      - name: From Tokens to Sequences
+      - name: Token Ordering
+      - name: The Core Mechanism
+      - name: The Selective Mechanism
+  - name: Bidirectional Sequence Modeling
+    subsections:
+      - name: The Bi-Mamba Architecture
+  - name: Two-Level Processing in Graph Mamba
+  - name: End-to-End Architecture
+  - name: Results on Cora
+  - name: References
 ---
 
 <script src="//unpkg.com/3d-force-graph"></script>
@@ -75,27 +96,14 @@ toc: true
   </div>
 </section>
 
-<nav class="table-of-contents">
-<h3>Contents</h3>
-<ol>
-<li><a href="#foundations">Foundations: Understanding Graphs</a></li>
-<li><a href="#step1">Step 1: From Walks to Tokens</a></li>
-<li><a href="#step2">Step 2: Encoding Subgraphs with Local Encoders</a></li>
-<li><a href="#step3">Step 3: The Mamba Block: Selective State Spaces</a></li>
-<li><a href="#step4">Step 4: Bidirectional Sequence Modeling</a></li>
-<li><a href="#step5">Step 5: Two-Level Processing in Graph Mamba</a></li>
-<li><a href="#arch">End-to-End Architecture</a></li>
-<li><a href="#results">Results on Cora</a></li>
-</ol>
-</nav>
 <section class="article-width" id="foundations" style="margin-top: 6rem; margin-bottom: 2rem;">
-<h2>Foundations: Understanding Graphs & Sequence Models</h2>
+<h2 id="foundations-understanding-graphs-and-sequence-models">Foundations - Understanding Graphs and Sequence Models</h2>
 <p class="section-intro">
             Before diving into Graph Mamba, let's establish the fundamentals of graph-structured data 
             and why traditional approaches struggle with it.
         </p>
 
-<h3>The Limitations of Message Passing</h3>
+<h3 id="the-limitations-of-message-passing">The Limitations of Message Passing</h3>
 <p>
             A <strong>graph</strong> is a data structure with <strong>nodes</strong> (entities) and 
             <strong>edges</strong> (relationships) connecting these nodes. Graph Neural Networks (GNNs) are the standard for learning on graph-structured data. Most Graph Neural Networks operate via <strong>message passing</strong>: at each layer, every node
@@ -107,7 +115,7 @@ toc: true
 <p>
             There is also a practical cost: each layer typically requires iterating over edges to aggregate messages, so deeper models mean more passes over the graph and higher memory/compute. This is especially painful for large, dense, or high-degree graphs.
         </p>
-<h3>Enter Mamba: The Selective State Space Model</h3>
+<h3 id="enter-mamba-the-selective-state-space-model">Enter Mamba - The Selective State Space Model</h3>
   <p>
     To overcome these bottlenecks, we turn to <strong>Mamba</strong>, a recent architecture based on <strong>Selective State Space Models (SSMs)</strong>. Mamba was originally designed for sequence modeling, but its core properties are uniquely suited for graphs when we view them as sequences of structural snapshots.
   </p>
@@ -163,7 +171,7 @@ toc: true
 </details>
 </section>
 <section class="article-width" id="step1" style="margin-top: 6rem; margin-bottom: 2rem;">
-<h2>From Random Walks to Tokens</h2>
+<h2 id="from-random-walks-to-tokens">From Random Walks to Tokens</h2>
 <p class="section-intro">
             The first innovation in Graph Mamba is how we sample and represent graph neighborhoods. 
             Instead of fixed-radius neighbors, we use random walks to create multi-scale <strong>snapshots</strong> of the graph.
@@ -311,7 +319,7 @@ toc: true
   </div>
 </section>
 <section class="article-width" id="step2" style="margin-top: 6rem; margin-bottom: 2rem;">
-<h2>Encoding Subgraphs with Local Encoders</h2>
+<h2 id="encoding-subgraphs-with-local-encoders">Encoding Subgraphs with Local Encoders</h2>
 <p class="section-intro">
             Now that we have tokens (subgraphs), the next objective is to convert each token into a latent vector representation. This transformation is done by the local encoder \(\varphi(\cdot)\). </p>
 <p>
@@ -398,7 +406,7 @@ toc: true
 <span class="nb">list</span><span class="p">(</span><span class="n">ordered_token_embeddings</span><span class="p">.</span><span class="n">items</span><span class="p">())[:</span><span class="mi">5</span><span class="p">]</span></code></pre></figure>
 
 </details>
-<h3>GCN Encoder: Three Phases</h3>
+<h3 id="gcn-encoder-three-phases">GCN Encoder - Three Phases</h3>
 <p>
             Previously, we modeled the local encoder \(\varphi(\cdot)\) as an abstract operator mapping a structural snapshot \(\mathcal{T}_{\ell}(v)\) to a latent vector \(\mathbf{x}_{\ell}(v) \in \mathbb{R}^{d}\). In this section, we explain the internal mechanism of \(\varphi(\cdot)\) by instantiating it as a two-layer Graph Convolutional Network (GCN). 
         </p> 
@@ -432,11 +440,11 @@ toc: true
 
 
 <section class="article-width" id="step3" style="margin-top: 6rem; margin-bottom: 2rem;">
-<h2>The Mamba Block: Selective State Spaces</h2>
+<h2 id="the-mamba-block-selective-state-spaces">The Mamba Block - Selective State Spaces</h2>
 <p class="section-intro">
           After mapping the tokens into a sequence of latent representations the next challenge is to model the dependencies within this sequence efficiently. To this end, we employ the Mamba architecture, which leverages selective state space models (SSMs) to achieve linear computational complexity with respect to sequence length, unlike attention mechanisms with quadratic computational complexity.
         </p>
-<h3>From Tokens to Sequences</h3>
+<h3 id="from-tokens-to-sequences">From Tokens to Sequences</h3>
 <p>
           Following the local encoding phase, the multiscale environment of each node \(v\) is represented by a set of \(K\) embeddings, derived from the structural snapshots \(\{\mathcal{T}_{\ell}(v)\}\). These embeddings are organized into a matrix \(\mathbf{X}(v) \in \mathbb{R}^{K \times d}\), where: </p> 
           <ul> 
@@ -445,7 +453,7 @@ toc: true
           </ul>
           <p> The matrix \(\mathbf{X}(v)\) serves as the input sequence for the Mamba block. Each row \(\mathbf{x}_{k}(v)\) constitutes a single <strong>token</strong> that represents the structural information of a specific subgraph from a random walk.
         </p>
-<h3>Token Ordering</h3>
+<h3 id="token-ordering">Token Ordering</h3>
 <p>
             Unlike permutation-equivariant Transformers, the Mamba architecture is inherently sequential; the state update at step \(t\) depends strictly on the previous states \(1, \dots, t-1\). Consequently, the ordering of the token sequence \(\mathbf{X}(v)\) is structurally significant. 
         </p>
@@ -463,7 +471,7 @@ toc: true
   </ul> 
 </div>
 
-<h3>The Core Mechanism</h3>
+<h3 id="the-core-mechanism">The Core Mechanism</h3>
  <p> As the model processes the sequence of structural tokens \(\mathbf{x}_1, \dots, \mathbf{x}_K\), the Mamba block maintains a compressed representation of the context via a <strong>hidden state</strong>. Formally, this process is defined by a discretized state space equation: </p> 
  <div class="formula-box"> 
  <p>The latent state evolves according to the linear recurrence:</p> 
@@ -475,7 +483,7 @@ toc: true
   <li>\(\bar{\mathbf{B}}_t\): The input projection matrix (determining information update).</li> 
 </ul> 
 </div>
-<h3>The Selective Mechanism</h3>
+<h3 id="the-selective-mechanism">The Selective Mechanism</h3>
 <p> In classical State Space Models (SSMs), the parameters \(\mathbf{A}\) and \(\mathbf{B}\) are static, independent of the input sequence. Mamba diverges from this by making the transition dynamics <strong>input-dependent</strong>. </p>
 <p> Central to this mechanism is the <strong>timescale parameter</strong> \(\Delta_t\), which acts as a gating factor derived from the current input \(\mathbf{x}_t\): </p> 
 <div class="formula-box"> <p> 
@@ -615,9 +623,9 @@ toc: true
 </section>
 
 <section class="article-width" id="step4" style="margin-top: 6rem; margin-bottom: 2rem;">
-<h2>Bidirectional Sequence Modeling</h2> 
+<h2 id="bidirectional-sequence-modeling">Bidirectional Sequence Modeling</h2> 
 <p class="section-intro"> Unlike natural language sequences which follow a canonical temporal order, graph random walks are stochastic traversals lacking inherent directionality. Processing such sequences exclusively in a forward manner imposes some causal bias. Graph Mamba mitigates this possible bias by using a bidirectional architecture. </p> 
-<h3>The Bi-Mamba Architecture</h3> 
+<h3 id="the-bi-mamba-architecture">The Bi-Mamba Architecture</h3> 
 <p> Standard State Space Models are causal: the hidden state \(\mathbf{h}_t\) depends solely on the history \(\mathbf{x}_{1 \dots t}\). However, for structural representation learning, a token should be informed by the entire context of the neighborhood snapshot, regardless of its position in the sampled sequence. </p> 
 <p> To achieve this, the <strong>Bidirectional Mamba</strong> block processes the input token sequence \(\mathbf{X}(v)\) using two independent SSM heads operating in opposite directions: </p>
 <ul> 
@@ -727,7 +735,7 @@ toc: true
 </section>
 
 <section class="article-width" id="step5" style="margin-top: 6rem; margin-bottom: 2rem;">
-<h2>Two-Level Processing in Graph Mamba</h2>
+<h2 id="two-level-processing-in-graph-mamba">Two-Level Processing in Graph Mamba</h2>
 <p>
   The Graph Mamba architecture is designed to be versatile. It builds representations hierarchically: first by understanding the local structure of each node, and then by modeling how these nodes interact globally. This two-level approach makes it suitable for both <strong>node-level tasks</strong> (like classifying papers in a citation network) and <strong>graph-level tasks</strong> (like predicting properties of entire molecules).
 </p>
@@ -762,7 +770,7 @@ toc: true
 </section>
 
 <section class="article-width" id="arch" style="margin-top: 6rem; margin-bottom: 2rem;">
-<h2>End-to-End Architecture</h2>
+<h2 id="end-to-end-architecture">End-to-End Architecture</h2>
 <p class="section-intro">
     The Graph Mamba pipeline is characterized by its efficient design, requiring only a minimal set of trainable components. By substituting complex attention mechanisms and deep message-passing stacks with a concise sequence of local encoders and selective state space models, the architecture achieves structural depth without the associated computational overhead. 
 </p>
@@ -873,7 +881,7 @@ toc: true
 </section>
 
 <section class="article-width" id="results" style="margin-top: 6rem; margin-bottom: 2rem;">
-<h2>Results on Cora</h2>
+<h2 id="results-on-cora">Results on Cora</h2>
 <p>Validation metrics (best checkpoint):</p>
 <div class="info-box">
 <div><strong>Accuracy:</strong> 0.6780</div>
@@ -3319,13 +3327,7 @@ window.GCN_LOCAL_PAYLOAD = {
 })();
 </script>
 
-<section class="article-width" id="references" style="margin-top: 6rem; margin-bottom: 2rem;">
-  <h2>References</h2>
-  <ul>
-    <li>
-      Graph Mamba: Towards Learning on Graphs with State Space Models
-      <d-cite key="behrouz2024graphmambalearninggraphs"></d-cite>
-      <a href="https://arxiv.org/abs/2402.08678">https://arxiv.org/abs/2402.08678</a>
-    </li>
-  </ul>
-</section>
+## References
+
+- Graph Mamba: Towards Learning on Graphs with State Space Models <d-cite key="behrouz2024graphmambalearninggraphs"></d-cite>
+- The Cora Citation Dataset <d-cite key="cora2001"></d-cite>
