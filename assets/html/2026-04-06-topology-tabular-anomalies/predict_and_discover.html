@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predict & Discover</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root {
+    --bg: #fafaf8; --panel: #fff; --border: #e2dfd8;
+    --text: #2c2c2c; --muted: #7a7a72; --accent: #2a9d8f;
+    --red: #d64045; --blue: #3a86a8; --amber: #e9a820;
+    --green: #2a9d8f;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Source Serif 4',Georgia,serif; background:var(--bg); color:var(--text); padding:16px; }
+  .container { max-width:860px; margin:0 auto; }
+
+  .stage { display:none; animation: fadeIn 0.5s ease; }
+  .stage.active { display:block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .prompt { font-size:18px; font-weight:600; text-align:center; margin-bottom:6px; line-height:1.4; }
+  .subprompt { font-size:14px; color:var(--muted); text-align:center; margin-bottom:18px; font-style:italic; }
+
+  .viz-row { display:flex; gap:14px; justify-content:center; margin-bottom:18px; flex-wrap:wrap; }
+  canvas { border-radius:6px; border:1px solid var(--border); background:#fcfcfa; }
+
+  .choices { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:14px; }
+  .choice-btn {
+    font-family:'Source Serif 4',serif; font-size:14px; font-weight:600;
+    padding:10px 22px; border-radius:6px; cursor:pointer;
+    border:2px solid var(--border); background:var(--panel);
+    transition:all 0.2s; color:var(--text);
+  }
+  .choice-btn:hover { border-color:var(--accent); background:rgba(42,157,143,0.04); }
+  .choice-btn.selected { border-color:var(--accent); background:rgba(42,157,143,0.08); }
+  .choice-btn.correct { border-color:var(--green); background:rgba(42,157,143,0.12); color:var(--green); }
+  .choice-btn.wrong { border-color:var(--red); background:rgba(214,64,69,0.06); color:var(--red); text-decoration:line-through; }
+
+  .reveal-box {
+    background:var(--panel); border:1px solid var(--border); border-radius:8px;
+    padding:20px 24px; margin:16px 0; text-align:center;
+  }
+  .reveal-title { font-size:16px; font-weight:600; margin-bottom:8px; }
+  .reveal-text { font-size:14px; line-height:1.65; color:var(--text); }
+  .reveal-text em { color:var(--muted); }
+
+  .auroc-bar {
+    display:flex; align-items:center; gap:10px; margin:6px auto;
+    max-width:380px; font-family:'JetBrains Mono',monospace; font-size:12px;
+  }
+  .auroc-label { width:90px; text-align:right; color:var(--muted); }
+  .auroc-track { flex:1; height:20px; background:#f0ede6; border-radius:4px; overflow:hidden; position:relative; }
+  .auroc-fill { height:100%; border-radius:4px; transition:width 1.2s cubic-bezier(0.22,1,0.36,1); width:0; }
+  .auroc-val { width:50px; font-weight:500; }
+
+  .next-btn {
+    display:block; margin:18px auto 0; font-family:'Source Serif 4',serif;
+    font-size:14px; font-weight:600; padding:10px 28px;
+    border:2px solid var(--accent); border-radius:6px;
+    background:rgba(42,157,143,0.06); color:var(--accent);
+    cursor:pointer; transition:all 0.2s;
+  }
+  .next-btn:hover { background:rgba(42,157,143,0.14); }
+
+  .slider-group { text-align:center; margin:14px 0; }
+  .slider-group label { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); }
+  .slider-group input[type=range] { width:300px; max-width:80%; accent-color:var(--accent); }
+  .slider-val { font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:500; color:var(--text); }
+
+  .insight {
+    background:#f8f6f0; border:1px solid var(--border); border-radius:6px;
+    padding:14px 18px; margin-top:14px; font-size:13.5px; line-height:1.6;
+  }
+  .insight strong { color:var(--text); }
+
+  .final-message {
+    text-align:center; font-size:15px; line-height:1.6; margin-top:16px;
+    color:var(--muted); font-style:italic;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- STAGE 1: The Setup -->
+  <div class="stage active" id="s1">
+    <div class="prompt">Here's an annulus with anomalies hiding inside.</div>
+    <div class="subprompt">500 ring points, 10 anomalies in the hole. Which detector finds them?</div>
+    <div class="viz-row"><canvas id="c1" width="340" height="340"></canvas></div>
+    <div class="prompt" style="font-size:15px; margin-bottom:12px">Your prediction: which method gets the highest AUROC?</div>
+    <div class="choices" id="ch1">
+      <button class="choice-btn" onclick="predict(1,'iforest')">Isolation Forest</button>
+      <button class="choice-btn" onclick="predict(1,'lof')">LOF</button>
+      <button class="choice-btn" onclick="predict(1,'ph')">Persistent Homology</button>
+    </div>
+  </div>
+
+  <!-- STAGE 2: The Surprise -->
+  <div class="stage" id="s2">
+    <div class="prompt" id="s2title"></div>
+    <div class="reveal-box">
+      <div class="reveal-title">Actual Results (10-trial mean)</div>
+      <div class="auroc-bar"><span class="auroc-label">iForest</span><div class="auroc-track"><div class="auroc-fill" id="bar-if" style="background:var(--amber)"></div></div><span class="auroc-val" id="val-if">—</span></div>
+      <div class="auroc-bar"><span class="auroc-label">LOF (k=20)</span><div class="auroc-track"><div class="auroc-fill" id="bar-lof" style="background:var(--blue)"></div></div><span class="auroc-val" id="val-lof">—</span></div>
+      <div class="auroc-bar"><span class="auroc-label">PH-Manifold</span><div class="auroc-track"><div class="auroc-fill" id="bar-ph" style="background:var(--green)"></div></div><span class="auroc-val" id="val-ph">—</span></div>
+      <div class="reveal-text" style="margin-top:14px" id="s2explain"></div>
+    </div>
+    <button class="next-btn" onclick="goStage(3)">But wait — what if the data gets dirtier? →</button>
+  </div>
+
+  <!-- STAGE 3: The Phase Transition -->
+  <div class="stage" id="s3">
+    <div class="prompt">Now drag the contamination rate up.</div>
+    <div class="subprompt">Watch what happens to LOF as more anomalies appear inside the hole.</div>
+    <div class="viz-row">
+      <canvas id="c3" width="280" height="280"></canvas>
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:280px">
+        <div class="auroc-bar"><span class="auroc-label">LOF</span><div class="auroc-track"><div class="auroc-fill" id="bar3-lof" style="background:var(--blue);width:100%"></div></div><span class="auroc-val" id="val3-lof">1.000</span></div>
+        <div class="auroc-bar"><span class="auroc-label">DTM</span><div class="auroc-track"><div class="auroc-fill" id="bar3-dtm" style="background:var(--amber);width:100%"></div></div><span class="auroc-val" id="val3-dtm">1.000</span></div>
+        <div class="auroc-bar"><span class="auroc-label">PH-Manifold</span><div class="auroc-track"><div class="auroc-fill" id="bar3-ph" style="background:var(--green);width:100%"></div></div><span class="auroc-val" id="val3-ph">1.000</span></div>
+      </div>
+    </div>
+    <div class="slider-group">
+      <label>Contamination: </label>
+      <span class="slider-val" id="contam-val">2%</span><br>
+      <input type="range" id="contam-slider" min="1" max="20" value="2" oninput="updateContam()">
+    </div>
+    <div class="insight" id="s3insight">
+      At 2% contamination, both methods detect everything. Drag right to see the phase transition.
+    </div>
+    <button class="next-btn" id="s3next" style="display:none" onclick="goStage(4)">Now you've seen it — read on to understand why →</button>
+  </div>
+
+  <!-- STAGE 4: The Punchline -->
+  <div class="stage" id="s4">
+    <div class="reveal-box" style="border-color:var(--accent)">
+      <div class="reveal-title" style="color:var(--accent)">You just discovered the phase transition.</div>
+      <div class="reveal-text">
+        LOF collapses at <strong>c* ≈ k/n</strong> — the contamination rate where anomalies form their own neighborhood and fool density-based methods. DTM resists because it measures absolute distance, not relative density. PH is immune because it anchors on the global loop.<br><br>
+        <em>The rest of this post derives c* formally, fits a universal scaling law, verifies it on real datasets, and gives you a decision framework — with a tool to test on your own data.</em>
+      </div>
+    </div>
+    <div class="final-message">
+      ↓ Scroll down to continue reading ↓
+    </div>
+  </div>
+
+</div>
+
+<script>
+// --- Data generation ---
+function seededRandom(seed) {
+  return function() { seed = Math.sin(seed)*10000; return seed-Math.floor(seed); };
+}
+
+function generateAnnulus(n, nAnom, seed) {
+  const rng = seededRandom(seed);
+  const pts = [];
+  for(let i=0;i<n;i++){
+    const a=rng()*Math.PI*2, r=2+rng();
+    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, anom:false});
+  }
+  for(let i=0;i<nAnom;i++){
+    const a=rng()*Math.PI*2, r=rng()*1.5;
+    pts.push({x:Math.cos(a)*r, y:Math.sin(a)*r, anom:true});
+  }
+  return pts;
+}
+
+function drawAnnulus(canvasId, pts, highlight) {
+  const c = document.getElementById(canvasId);
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0,0,W,H);
+  
+  const scale = W/8, cx = W/2, cy = H/2;
+  
+  // Draw ring region hint
+  ctx.beginPath(); ctx.arc(cx,cy,2.5*scale,0,Math.PI*2);
+  ctx.fillStyle='rgba(58,134,168,0.03)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx,cy,1.5*scale,0,Math.PI*2);
+  ctx.fillStyle='#fcfcfa'; ctx.fill();
+  
+  pts.forEach(p => {
+    const px = cx + p.x*scale, py = cy + p.y*scale;
+    ctx.beginPath(); ctx.arc(px,py, p.anom?4.5:2.2, 0,Math.PI*2);
+    if(p.anom) {
+      ctx.fillStyle = highlight ? 'rgba(214,64,69,0.9)' : 'rgba(214,64,69,0.7)';
+      ctx.fill();
+      if(highlight) { ctx.strokeStyle='#a02020'; ctx.lineWidth=1.5; ctx.stroke(); }
+    } else {
+      ctx.fillStyle = 'rgba(58,134,168,0.35)';
+      ctx.fill();
+    }
+  });
+  
+  // Label
+  ctx.font = '11px JetBrains Mono';
+  ctx.fillStyle = 'rgba(214,64,69,0.6)';
+  ctx.textAlign = 'center';
+  const hasAnom = pts.some(p => p.anom);
+  if(hasAnom) {
+    ctx.fillText('anomalies', cx, cy-4);
+  }
+}
+
+// --- Stage 1: Draw initial annulus ---
+const pts1 = generateAnnulus(500, 10, 42);
+drawAnnulus('c1', pts1, true);
+
+// --- Predictions ---
+let prediction1 = null;
+
+function predict(stage, choice) {
+  prediction1 = choice;
+  document.querySelectorAll('#ch1 .choice-btn').forEach(b => b.classList.remove('selected'));
+  event.target.classList.add('selected');
+  
+  setTimeout(() => {
+    // Mark correct/wrong
+    document.querySelectorAll('#ch1 .choice-btn').forEach(b => {
+      const val = b.textContent.trim();
+      if(val.includes('LOF') || val.includes('Persistent')) b.classList.add('correct');
+      else if(b.classList.contains('selected') && !val.includes('LOF') && !val.includes('Persistent')) b.classList.add('wrong');
+    });
+    setTimeout(() => goStage(2), 600);
+  }, 400);
+}
+
+function goStage(n) {
+  document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  
+  if(n===2) showReveal();
+  if(n===3) { updateContam(); }
+}
+
+function showReveal() {
+  const title = document.getElementById('s2title');
+  const explain = document.getElementById('s2explain');
+  
+  if(prediction1 === 'ph') {
+    title.innerHTML = '🤔 Good instinct — but you missed something.';
+    explain.innerHTML = 'PH-Manifold does get AUROC 1.000. But so does <strong>LOF</strong> — a 25-year-old density method that computes zero topology. The anomalies inside the hole are also farther from their neighbors, and LOF exploits that. <em>Topology wasn\'t needed here.</em>';
+  } else if(prediction1 === 'lof') {
+    title.innerHTML = '😮 You predicted LOF — and you\'re right. Most people don\'t.';
+    explain.innerHTML = 'Most TDA practitioners bet on PH here. LOF achieves AUROC 1.000 because interior anomalies are farther from ring points — a density signal, not a topological one. <em>But keep going — the story changes.</em>';
+  } else {
+    title.innerHTML = '❌ Not quite — iForest sees the boundary, not the hole.';
+    explain.innerHTML = 'iForest\'s random splits isolate the outer boundary (easy to cut off), not the interior anomalies. The winners are <strong>LOF and PH — tied at 1.000</strong>. <em>Topology wasn\'t needed here.</em>';
+  }
+  
+  // Animate bars
+  setTimeout(() => {
+    document.getElementById('bar-if').style.width = '92.8%';
+    document.getElementById('val-if').textContent = '0.928';
+    document.getElementById('bar-lof').style.width = '100%';
+    document.getElementById('val-lof').textContent = '1.000';
+    document.getElementById('bar-ph').style.width = '100%';
+    document.getElementById('val-ph').textContent = '1.000';
+  }, 200);
+}
+
+// --- Stage 3: Contamination slider ---
+// Precomputed LOF AUROC at different contamination rates
+const lofByContam = {
+  1:1.00, 2:1.00, 3:0.98, 4:0.95, 5:0.89, 6:0.82, 7:0.76, 8:0.72,
+  9:0.70, 10:0.68, 11:0.67, 12:0.66, 13:0.65, 14:0.64, 15:0.63,
+  16:0.62, 17:0.61, 18:0.61, 19:0.60, 20:0.60
+};
+const phByContam = {
+  1:1.00, 2:1.00, 3:1.00, 4:1.00, 5:1.00, 6:1.00, 7:1.00, 8:1.00,
+  9:1.00, 10:1.00, 11:0.999, 12:0.998, 13:0.997, 14:0.996, 15:0.995,
+  16:0.994, 17:0.993, 18:0.992, 19:0.991, 20:0.990
+};
+const dtmByContam = {
+  1:1.00, 2:1.00, 3:1.00, 4:1.00, 5:0.99, 6:0.99, 7:0.99, 8:0.98,
+  9:0.98, 10:0.97, 11:0.97, 12:0.96, 13:0.95, 14:0.93, 15:0.91,
+  16:0.89, 17:0.85, 18:0.81, 19:0.75, 20:0.68
+};
+
+let hasSeenCollapse = false;
+
+function updateContam() {
+  const c = parseInt(document.getElementById('contam-slider').value);
+  document.getElementById('contam-val').textContent = c + '%';
+  
+  const nAnom = Math.round(500 * c / 100);
+  const pts = generateAnnulus(500, nAnom, 42);
+  drawAnnulus('c3', pts, true);
+  
+  const lof = lofByContam[c] || 0.60;
+  const ph = phByContam[c] || 0.99;
+  const dtm = dtmByContam[c] || 0.68;
+  
+  document.getElementById('bar3-lof').style.width = (lof*100)+'%';
+  document.getElementById('val3-lof').textContent = lof.toFixed(3);
+  document.getElementById('bar3-dtm').style.width = (dtm*100)+'%';
+  document.getElementById('val3-dtm').textContent = dtm.toFixed(3);
+  document.getElementById('bar3-ph').style.width = (ph*100)+'%';
+  document.getElementById('val3-ph').textContent = ph.toFixed(3);
+  
+  // Color the LOF bar red when it drops
+  const lofBar = document.getElementById('bar3-lof');
+  if(lof < 0.8) lofBar.style.background = 'var(--red)';
+  else if(lof < 0.95) lofBar.style.background = 'var(--amber)';
+  else lofBar.style.background = 'var(--blue)';
+  
+  // Insight text
+  const ins = document.getElementById('s3insight');
+  const cstar = (20/500*100).toFixed(1);
+  if(c <= 3) {
+    ins.innerHTML = `At ${c}% contamination, all three methods work. The anomalies are too few to fool anyone.`;
+  } else if(c <= 6) {
+    ins.innerHTML = `<strong>LOF is wobbling.</strong> At ${c}%, anomalies form a "phantom cluster" — LOF starts assigning them near-normal scores. DTM and PH hold steady because they don't compare relative density.`;
+  } else if(c <= 10) {
+    ins.innerHTML = `<strong>LOF has collapsed.</strong> At ${c}%, the anomaly cluster fools LOF's local density comparison. DTM resists because it measures absolute distance to the data mass. PH-Manifold anchors on the global H₁ loop.`;
+    if(!hasSeenCollapse) { hasSeenCollapse = true; document.getElementById('s3next').style.display = 'block'; }
+  } else {
+    ins.innerHTML = `At ${c}%: LOF ${lof.toFixed(2)}, DTM ${dtm.toFixed(2)}, PH ${ph.toFixed(3)}. LOF is reliably broken. DTM degrades gradually but stays well above LOF. The gap between relative-density methods (LOF) and absolute-distance methods (DTM) is the post's central finding.`;
+    if(!hasSeenCollapse) { hasSeenCollapse = true; document.getElementById('s3next').style.display = 'block'; }
+  }
+}
+</script>
+</body>
+</html>

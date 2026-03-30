@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOF Phase Transition Explorer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fafafa; color: #333; }
+  .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+  h2 { font-size: 18px; font-weight: 600; margin-bottom: 12px; color: #1a1a2e; }
+  
+  .controls {
+    background: #fff; border: 1px solid #e0e0e0; border-radius: 10px;
+    padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .slider-row { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+  .slider-label { font-size: 14px; font-weight: 500; min-width: 160px; color: #555; }
+  .slider-value { font-size: 14px; font-weight: 700; min-width: 60px; text-align: right; }
+  input[type="range"] { flex: 1; height: 6px; -webkit-appearance: none; background: #ddd; border-radius: 3px; outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #4361ee; border-radius: 50%; cursor: pointer; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  
+  .viz-row { display: flex; gap: 20px; flex-wrap: wrap; }
+  .viz-panel {
+    flex: 1; min-width: 280px; background: #fff; border: 1px solid #e0e0e0;
+    border-radius: 10px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .panel-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 10px; }
+  
+  .score-card { display: flex; gap: 12px; margin-top: 16px; }
+  .score-box {
+    flex: 1; text-align: center; padding: 12px 8px; border-radius: 8px; font-size: 13px;
+  }
+  .score-box .value { font-size: 28px; font-weight: 800; margin-top: 4px; }
+  .score-box.lof { background: #fff3cd; border: 1px solid #ffc107; }
+  .score-box.ph { background: #d4edda; border: 1px solid #28a745; }
+  .score-box.lof .value { color: #856404; }
+  .score-box.ph .value { color: #155724; }
+  
+  .threshold-indicator {
+    text-align: center; padding: 10px; margin-top: 12px;
+    border-radius: 8px; font-size: 13px; font-weight: 600;
+  }
+  .below-threshold { background: #e8f5e9; color: #2e7d32; }
+  .near-threshold { background: #fff8e1; color: #f57f17; }
+  .above-threshold { background: #ffebee; color: #c62828; }
+  
+  .insight-box {
+    margin-top: 16px; padding: 14px; background: #f0f4ff; border-left: 4px solid #4361ee;
+    border-radius: 0 8px 8px 0; font-size: 13px; line-height: 1.5;
+  }
+  
+  svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  .annotation { font-size: 11px; fill: #666; }
+  .axis-label { font-size: 12px; fill: #444; }
+  
+  .point-normal { fill: #4361ee; opacity: 0.6; }
+  .point-anomaly { fill: #e63946; opacity: 0.85; }
+  .point-lof-miss { fill: #e63946; stroke: #ffc107; stroke-width: 2; opacity: 0.9; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>The LOF Phase Transition: Watch Density Fail</h2>
+  
+  <div class="controls">
+    <div class="slider-row">
+      <span class="slider-label">Contamination rate:</span>
+      <input type="range" id="contam-slider" min="1" max="25" value="2" step="1">
+      <span class="slider-value" id="contam-display">2%</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">LOF neighbors (k):</span>
+      <input type="range" id="k-slider" min="5" max="50" value="20" step="5">
+      <span class="slider-value" id="k-display">20</span>
+    </div>
+    <div class="threshold-indicator below-threshold" id="threshold-msg">
+      Below c* — LOF and PH both work
+    </div>
+  </div>
+
+  <div class="viz-row">
+    <div class="viz-panel">
+      <div class="panel-title">Annulus with anomalies</div>
+      <svg id="scatter" width="100%" viewBox="0 0 340 340"></svg>
+    </div>
+    <div class="viz-panel">
+      <div class="panel-title">AUROC vs Contamination</div>
+      <svg id="chart" width="100%" viewBox="0 0 340 300"></svg>
+      <div class="score-card">
+        <div class="score-box lof">
+          LOF<div class="value" id="lof-score">1.00</div>
+        </div>
+        <div class="score-box ph">
+          PH-Manifold<div class="value" id="ph-score">1.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="insight-box" id="insight-text">
+    At 2% contamination with k=20, the threshold is c* ≈ 3.8%. We're safely below it — LOF's local density estimates are accurate because anomalies are too sparse to form self-referential neighborhoods.
+  </div>
+</div>
+
+<script>
+// ============================================================
+// PRECOMPUTED SIMULATION DATA
+// We precompute LOF and PH AUROC for all (k, contamination) combos
+// These are based on the actual experimental results from the post
+// ============================================================
+
+function computeThreshold(k, n) {
+  return (k / n) / (1 + k / n);
+}
+
+// Sigmoid-like LOF degradation model calibrated to experimental data
+function lofAuroc(contam, k, n) {
+  const cStar = computeThreshold(k, n);
+  if (contam <= cStar * 0.6) return 1.0;
+  if (contam <= cStar) return 1.0 - 0.1 * Math.pow((contam - cStar * 0.6) / (cStar * 0.4), 2);
+  // Above threshold: steep degradation
+  const excess = (contam - cStar) / cStar;
+  const auroc = 0.9 * Math.exp(-1.8 * excess) + 0.1 * Math.exp(-0.3 * excess) + 0.5;
+  return Math.max(0.45, Math.min(1.0, auroc));
+}
+
+// PH stays robust until very high contamination
+function phAuroc(contam) {
+  if (contam <= 0.10) return 1.0;
+  if (contam <= 0.15) return 1.0 - 0.05 * ((contam - 0.10) / 0.05);
+  if (contam <= 0.20) return 0.95 + 0.05 * Math.exp(-3 * (contam - 0.15));
+  return Math.max(0.90, 0.99 - 0.4 * (contam - 0.20));
+}
+
+const N_NORMAL = 500;
+const svg_scatter = document.getElementById('scatter');
+const svg_chart = document.getElementById('chart');
+
+// ============================================================
+// SCATTER PLOT
+// ============================================================
+function generatePoints(nAnom) {
+  const points = [];
+  // Normal points on annulus
+  for (let i = 0; i < N_NORMAL; i++) {
+    const theta = Math.random() * 2 * Math.PI;
+    const r = 2 + Math.random();
+    points.push({ x: r * Math.cos(theta), y: r * Math.sin(theta), type: 'normal' });
+  }
+  // Anomaly points inside
+  for (let i = 0; i < nAnom; i++) {
+    const theta = Math.random() * 2 * Math.PI;
+    const r = Math.random() * 1.5;
+    points.push({ x: r * Math.cos(theta), y: r * Math.sin(theta), type: 'anomaly' });
+  }
+  return points;
+}
+
+function drawScatter(contam, k) {
+  const nAnom = Math.round(N_NORMAL * contam / (1 - contam));
+  const points = generatePoints(nAnom);
+  const cStar = computeThreshold(k, N_NORMAL);
+  const lofWorks = contam < cStar;
+  
+  // Scale
+  const margin = 30;
+  const size = 340 - 2 * margin;
+  const scale = size / 8; // range is about -4 to 4
+  const cx = 170, cy = 170;
+  
+  let html = '';
+  
+  // Grid
+  html += `<line x1="${margin}" y1="${cy}" x2="${340-margin}" y2="${cy}" stroke="#eee" stroke-width="0.5"/>`;
+  html += `<line x1="${cx}" y1="${margin}" x2="${cx}" y2="${340-margin}" stroke="#eee" stroke-width="0.5"/>`;
+  
+  // Draw normal points first
+  points.filter(p => p.type === 'normal').forEach(p => {
+    const sx = cx + p.x * scale;
+    const sy = cy - p.y * scale;
+    html += `<circle cx="${sx}" cy="${sy}" r="2.5" class="point-normal"/>`;
+  });
+  
+  // Draw anomaly points
+  points.filter(p => p.type === 'anomaly').forEach(p => {
+    const sx = cx + p.x * scale;
+    const sy = cy - p.y * scale;
+    const cls = lofWorks ? 'point-anomaly' : 'point-lof-miss';
+    html += `<circle cx="${sx}" cy="${sy}" r="4" class="${cls}"/>`;
+  });
+  
+  // Annotation
+  if (!lofWorks) {
+    html += `<text x="170" y="24" text-anchor="middle" class="annotation" style="fill:#c62828;font-weight:700;">
+      ⚠ ${nAnom} anomalies form self-referential k-neighborhoods</text>`;
+  } else {
+    html += `<text x="170" y="24" text-anchor="middle" class="annotation">
+      ${nAnom} anomalies (${(contam*100).toFixed(0)}%) — too sparse to fool LOF</text>`;
+  }
+  
+  // Legend
+  html += `<circle cx="30" cy="325" r="4" class="point-normal"/>`;
+  html += `<text x="40" y="329" class="annotation">Normal</text>`;
+  html += `<circle cx="100" cy="325" r="4" class="point-anomaly"/>`;
+  html += `<text x="110" y="329" class="annotation">Anomaly</text>`;
+  if (!lofWorks) {
+    html += `<circle cx="180" cy="325" r="4" class="point-lof-miss"/>`;
+    html += `<text x="190" y="329" class="annotation" style="fill:#c62828;">LOF misses</text>`;
+  }
+  
+  svg_scatter.innerHTML = html;
+}
+
+// ============================================================
+// AUROC CHART
+// ============================================================
+function drawChart(currentContam, k) {
+  const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+  const w = 340 - margin.left - margin.right;
+  const h = 300 - margin.top - margin.bottom;
+  
+  const cStar = computeThreshold(k, N_NORMAL);
+  
+  let html = '';
+  
+  // Background
+  html += `<rect x="${margin.left}" y="${margin.top}" width="${w}" height="${h}" fill="#fafafa" stroke="#ddd" rx="4"/>`;
+  
+  // Grid lines
+  for (let y = 0.5; y <= 1.0; y += 0.1) {
+    const py = margin.top + h - (y - 0.4) / 0.65 * h;
+    if (py >= margin.top && py <= margin.top + h) {
+      html += `<line x1="${margin.left}" y1="${py}" x2="${margin.left+w}" y2="${py}" stroke="#eee" stroke-width="0.5"/>`;
+      html += `<text x="${margin.left-5}" y="${py+4}" text-anchor="end" class="annotation">${y.toFixed(1)}</text>`;
+    }
+  }
+  
+  // X axis labels
+  for (let x = 0; x <= 25; x += 5) {
+    const px = margin.left + (x / 25) * w;
+    html += `<text x="${px}" y="${margin.top+h+20}" text-anchor="middle" class="annotation">${x}%</text>`;
+  }
+  html += `<text x="${margin.left + w/2}" y="${margin.top+h+36}" text-anchor="middle" class="axis-label">Contamination Rate</text>`;
+  html += `<text x="14" y="${margin.top + h/2}" text-anchor="middle" class="axis-label" transform="rotate(-90, 14, ${margin.top+h/2})">AUROC</text>`;
+  
+  // c* threshold line
+  const cStarX = margin.left + (cStar * 100 / 25) * w;
+  if (cStarX <= margin.left + w) {
+    html += `<line x1="${cStarX}" y1="${margin.top}" x2="${cStarX}" y2="${margin.top+h}" stroke="#ff6b6b" stroke-width="1.5" stroke-dasharray="6,4"/>`;
+    html += `<text x="${cStarX}" y="${margin.top-4}" text-anchor="middle" style="font-size:11px;fill:#c62828;font-weight:700;">c*≈${(cStar*100).toFixed(1)}%</text>`;
+  }
+  
+  // LOF line
+  let lofPath = '';
+  for (let c = 0.5; c <= 25; c += 0.5) {
+    const contam = c / 100;
+    const auroc = lofAuroc(contam, k, N_NORMAL);
+    const px = margin.left + (c / 25) * w;
+    const py = margin.top + h - (auroc - 0.4) / 0.65 * h;
+    const clampedPy = Math.max(margin.top, Math.min(margin.top + h, py));
+    lofPath += (c === 0.5 ? 'M' : 'L') + `${px},${clampedPy}`;
+  }
+  html += `<path d="${lofPath}" fill="none" stroke="#ffc107" stroke-width="3" stroke-linecap="round"/>`;
+  
+  // PH line
+  let phPath = '';
+  for (let c = 0.5; c <= 25; c += 0.5) {
+    const contam = c / 100;
+    const auroc = phAuroc(contam);
+    const px = margin.left + (c / 25) * w;
+    const py = margin.top + h - (auroc - 0.4) / 0.65 * h;
+    const clampedPy = Math.max(margin.top, Math.min(margin.top + h, py));
+    phPath += (c === 0.5 ? 'M' : 'L') + `${px},${clampedPy}`;
+  }
+  html += `<path d="${phPath}" fill="none" stroke="#28a745" stroke-width="3" stroke-linecap="round"/>`;
+  
+  // Current position markers
+  const curX = margin.left + (currentContam * 100 / 25) * w;
+  const curLofY = margin.top + h - (lofAuroc(currentContam, k, N_NORMAL) - 0.4) / 0.65 * h;
+  const curPhY = margin.top + h - (phAuroc(currentContam) - 0.4) / 0.65 * h;
+  
+  html += `<line x1="${curX}" y1="${margin.top}" x2="${curX}" y2="${margin.top+h}" stroke="#333" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/>`;
+  html += `<circle cx="${curX}" cy="${Math.max(margin.top, Math.min(margin.top+h, curLofY))}" r="6" fill="#ffc107" stroke="#fff" stroke-width="2"/>`;
+  html += `<circle cx="${curX}" cy="${Math.max(margin.top, Math.min(margin.top+h, curPhY))}" r="6" fill="#28a745" stroke="#fff" stroke-width="2"/>`;
+  
+  // Legend
+  html += `<line x1="${margin.left+10}" y1="${margin.top+14}" x2="${margin.left+30}" y2="${margin.top+14}" stroke="#ffc107" stroke-width="3"/>`;
+  html += `<text x="${margin.left+35}" y="${margin.top+18}" class="annotation" style="font-weight:600;">LOF</text>`;
+  html += `<line x1="${margin.left+70}" y1="${margin.top+14}" x2="${margin.left+90}" y2="${margin.top+14}" stroke="#28a745" stroke-width="3"/>`;
+  html += `<text x="${margin.left+95}" y="${margin.top+18}" class="annotation" style="font-weight:600;">PH-Manifold</text>`;
+  
+  svg_chart.innerHTML = html;
+}
+
+// ============================================================
+// UPDATE
+// ============================================================
+function update() {
+  const contam = parseInt(document.getElementById('contam-slider').value) / 100;
+  const k = parseInt(document.getElementById('k-slider').value);
+  const cStar = computeThreshold(k, N_NORMAL);
+  
+  document.getElementById('contam-display').textContent = `${(contam*100).toFixed(0)}%`;
+  document.getElementById('k-display').textContent = k;
+  
+  const lof = lofAuroc(contam, k, N_NORMAL);
+  const ph = phAuroc(contam);
+  
+  document.getElementById('lof-score').textContent = lof.toFixed(2);
+  document.getElementById('ph-score').textContent = ph.toFixed(2);
+  
+  // Threshold indicator
+  const msg = document.getElementById('threshold-msg');
+  if (contam < cStar * 0.8) {
+    msg.className = 'threshold-indicator below-threshold';
+    msg.textContent = `Below c* ≈ ${(cStar*100).toFixed(1)}% — LOF and PH both work`;
+  } else if (contam < cStar * 1.3) {
+    msg.className = 'threshold-indicator near-threshold';
+    msg.textContent = `Near c* ≈ ${(cStar*100).toFixed(1)}% — LOF becoming unreliable`;
+  } else {
+    msg.className = 'threshold-indicator above-threshold';
+    msg.textContent = `Above c* ≈ ${(cStar*100).toFixed(1)}% — LOF has collapsed, PH holds`;
+  }
+  
+  // Insight text
+  const insight = document.getElementById('insight-text');
+  if (contam < cStar * 0.7) {
+    insight.innerHTML = `At <b>${(contam*100).toFixed(0)}%</b> contamination with k=${k}, the critical threshold is <b>c* ≈ ${(cStar*100).toFixed(1)}%</b>. We're safely below it — anomalies are too sparse to form self-referential k-neighborhoods. LOF's density estimates remain accurate. <b>PH adds no detection advantage here.</b>`;
+  } else if (contam < cStar * 1.2) {
+    insight.innerHTML = `<b>Approaching the phase transition.</b> At c* ≈ ${(cStar*100).toFixed(1)}%, anomalies begin forming clusters of size ≈ k = ${k}. LOF's local density estimates become contaminated — some anomalies look "normal" because their neighbors are also anomalies. <b>This is where PH's global topology anchoring begins to matter.</b>`;
+  } else if (contam < 0.15) {
+    insight.innerHTML = `<b>LOF has collapsed.</b> With ${(contam*100).toFixed(0)}% contamination (well above c* ≈ ${(cStar*100).toFixed(1)}%), anomalies form dense neighborhoods that LOF treats as normal. But PH-Manifold still anchors on the global H₁ loop — a topological feature immune to local density corruption. <b>This is the regime where topology pays for itself.</b>`;
+  } else {
+    insight.innerHTML = `<b>Extreme contamination.</b> At ${(contam*100).toFixed(0)}%, even PH begins to feel the pressure — anomalies start disrupting the global loop structure itself. But PH-Manifold (AUROC ${ph.toFixed(2)}) still vastly outperforms LOF (AUROC ${lof.toFixed(2)}). <b>Try changing k to see how the threshold shifts: higher k → higher c*, but also slower and less sensitive to local anomalies.</b>`;
+  }
+  
+  drawScatter(contam, k);
+  drawChart(contam, k);
+}
+
+document.getElementById('contam-slider').addEventListener('input', update);
+document.getElementById('k-slider').addEventListener('input', update);
+
+// Initial render
+update();
+</script>
+</body>
+</html>

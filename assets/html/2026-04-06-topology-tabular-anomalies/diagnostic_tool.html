@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Does Topology Pay for Your Data?</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root {
+    --bg:#fafaf8;--panel:#fff;--border:#e2dfd8;--text:#2c2c2c;--muted:#7a7a72;
+    --accent:#2a9d8f;--red:#d64045;--blue:#3a86a8;--amber:#e9a820;--green:#2a9d8f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Source Serif 4',Georgia,serif;background:var(--bg);color:var(--text);padding:16px}
+  .container{max-width:860px;margin:0 auto}
+  .title{font-size:17px;font-weight:600;text-align:center;margin-bottom:4px}
+  .subtitle{font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px;font-style:italic}
+
+  .input-section{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:18px;margin-bottom:14px}
+  .input-section h3{font-size:14px;font-weight:600;margin-bottom:10px}
+
+  .presets{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .preset-btn{
+    font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 12px;
+    border:1px solid var(--border);border-radius:4px;background:var(--bg);
+    cursor:pointer;color:var(--muted);transition:all 0.15s;
+  }
+  .preset-btn:hover,.preset-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(42,157,143,0.06)}
+
+  textarea{
+    width:100%;height:100px;font-family:'JetBrains Mono',monospace;font-size:11px;
+    border:1px solid var(--border);border-radius:4px;padding:10px;resize:vertical;
+    background:#fcfcfa;color:var(--text);
+  }
+
+  .run-btn{
+    display:block;margin:12px auto 0;font-family:'Source Serif 4',serif;
+    font-size:14px;font-weight:600;padding:10px 32px;
+    border:2px solid var(--accent);border-radius:6px;
+    background:rgba(42,157,143,0.08);color:var(--accent);cursor:pointer;
+  }
+  .run-btn:hover{background:rgba(42,157,143,0.16)}
+
+  .results{display:none}
+  .results.show{display:block;animation:fadeIn 0.5s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  .metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .metric-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:6px;
+    padding:12px;text-align:center;
+  }
+  .metric-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px}
+  .metric-value{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600}
+  .metric-note{font-size:10px;color:var(--muted);margin-top:2px}
+
+  .verdict-box{
+    border:2px solid;border-radius:8px;padding:16px 20px;margin-bottom:14px;
+  }
+  .verdict-box.use-ph{border-color:var(--green);background:rgba(42,157,143,0.04)}
+  .verdict-box.skip-ph{border-color:var(--blue);background:rgba(58,134,168,0.04)}
+  .verdict-box.maybe-ph{border-color:var(--amber);background:rgba(233,168,32,0.04)}
+  .verdict-title{font-size:15px;font-weight:600;margin-bottom:6px}
+  .verdict-text{font-size:13px;line-height:1.6;color:var(--text)}
+
+  .comparison{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+  .comp-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:14px}
+  .comp-title{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .comp-dot{width:10px;height:10px;border-radius:50%}
+  .score-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #f0ede6}
+  .score-row:last-child{border:none}
+  .score-label{color:var(--muted)}
+  .score-val{font-family:'JetBrains Mono',monospace;font-weight:500}
+
+  .reasoning{background:#f8f6f0;border:1px solid var(--border);border-radius:6px;padding:14px;font-size:12.5px;line-height:1.6}
+  .reasoning strong{color:var(--text)}
+
+  @media(max-width:600px){.metrics-grid{grid-template-columns:repeat(2,1fr)}.comparison{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="title">Does Topology Pay for Your Data?</div>
+  <div class="subtitle">Paste a small numeric CSV or pick a built-in dataset. We'll run LOF and PH-Filtration in your browser.</div>
+
+  <div class="input-section">
+    <h3>Choose a dataset</h3>
+    <div class="presets">
+      <button class="preset-btn" onclick="loadPreset('annulus')">Annulus (clean)</button>
+      <button class="preset-btn" onclick="loadPreset('annulus_dirty')">Annulus (10% contam)</button>
+      <button class="preset-btn" onclick="loadPreset('gaussian')">Gaussian + outliers</button>
+      <button class="preset-btn" onclick="loadPreset('moons')">Two Moons</button>
+      <button class="preset-btn" onclick="loadPreset('highdim')">High-d Gaussian (d=50)</button>
+    </div>
+    <h3 style="margin-top:8px">Or paste CSV data <span style="font-weight:400;font-size:12px;color:var(--muted)">(numeric columns, last column = label 0/1)</span></h3>
+    <textarea id="csv-input" placeholder="x1,x2,label&#10;1.2,3.4,0&#10;5.6,7.8,1&#10;..."></textarea>
+    <button class="run-btn" onclick="runDiagnostic()">🔍 Analyze</button>
+  </div>
+
+  <div class="results" id="results">
+    <div class="metrics-grid">
+      <div class="metric-card"><div class="metric-label">SAMPLES</div><div class="metric-value" id="m-n">—</div></div>
+      <div class="metric-card"><div class="metric-label">DIMENSIONS</div><div class="metric-value" id="m-d">—</div><div class="metric-note" id="m-d-note"></div></div>
+      <div class="metric-card"><div class="metric-label">CONTAMINATION</div><div class="metric-value" id="m-c">—</div><div class="metric-note" id="m-c-note"></div></div>
+      <div class="metric-card"><div class="metric-label">c* (k=20)</div><div class="metric-value" id="m-cstar">—</div></div>
+    </div>
+
+    <div class="verdict-box" id="verdict-box">
+      <div class="verdict-title" id="verdict-title">—</div>
+      <div class="verdict-text" id="verdict-text">—</div>
+    </div>
+
+    <div class="comparison">
+      <div class="comp-card">
+        <div class="comp-title"><div class="comp-dot" style="background:var(--blue)"></div>LOF (k=20)</div>
+        <div class="score-row"><span class="score-label">AUROC</span><span class="score-val" id="lof-auroc">—</span></div>
+        <div class="score-row"><span class="score-label">Top-10 precision</span><span class="score-val" id="lof-p10">—</span></div>
+        <div class="score-row"><span class="score-label">Runtime</span><span class="score-val" id="lof-time">—</span></div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-title"><div class="comp-dot" style="background:var(--amber)"></div>DTM (m=0.2)</div>
+        <div class="score-row"><span class="score-label">AUROC</span><span class="score-val" id="dtm-auroc">—</span></div>
+        <div class="score-row"><span class="score-label">Top-10 precision</span><span class="score-val" id="dtm-p10">—</span></div>
+        <div class="score-row"><span class="score-label">Runtime</span><span class="score-val" id="dtm-time">—</span></div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-title"><div class="comp-dot" style="background:var(--green)"></div>PH-Filtration (1-NN)</div>
+        <div class="score-row"><span class="score-label">AUROC</span><span class="score-val" id="ph-auroc">—</span></div>
+        <div class="score-row"><span class="score-label">Top-10 precision</span><span class="score-val" id="ph-p10">—</span></div>
+        <div class="score-row"><span class="score-label">Runtime</span><span class="score-val" id="ph-time">—</span></div>
+      </div>
+    </div>
+
+    <div class="reasoning" id="reasoning">—</div>
+  </div>
+</div>
+
+<script>
+// --- Preset datasets ---
+function seededRandom(s){return function(){s=Math.sin(s)*10000;return s-Math.floor(s)}}
+
+function genAnnulus(n,nA,seed){
+  const r=seededRandom(seed),pts=[];
+  for(let i=0;i<n;i++){const a=r()*Math.PI*2,d=2+r();pts.push([Math.cos(a)*d,Math.sin(a)*d,0])}
+  for(let i=0;i<nA;i++){const a=r()*Math.PI*2,d=r()*1.5;pts.push([Math.cos(a)*d,Math.sin(a)*d,1])}
+  return pts;
+}
+function genGaussian(n,nA,seed){
+  const r=seededRandom(seed),pts=[];
+  for(let i=0;i<n;i++)pts.push([r()*4-2+0.5*(r()-0.5),r()*4-2+0.5*(r()-0.5),0]);
+  for(let i=0;i<nA;i++)pts.push([8+r()*2,8+r()*2,1]);
+  return pts;
+}
+function genMoons(n,nA,seed){
+  const r=seededRandom(seed),pts=[];
+  for(let i=0;i<n/2;i++){const a=Math.PI*r();pts.push([Math.cos(a)+0.1*(r()-0.5),Math.sin(a)+0.1*(r()-0.5),0])}
+  for(let i=0;i<n/2;i++){const a=Math.PI+Math.PI*r();pts.push([1+Math.cos(a)+0.1*(r()-0.5),0.5+Math.sin(a)+0.1*(r()-0.5),0])}
+  for(let i=0;i<nA;i++){pts.push([0.4+r()*0.2,0.2+r()*0.2,1])}
+  return pts;
+}
+function genHighDim(n,nA,d,seed){
+  const r=seededRandom(seed),pts=[];
+  for(let i=0;i<n;i++){const p=[];for(let j=0;j<d;j++)p.push((r()-0.5)*2);p.push(0);pts.push(p)}
+  for(let i=0;i<nA;i++){const p=[];for(let j=0;j<d;j++)p.push(5+r());p.push(1);pts.push(p)}
+  return pts;
+}
+
+function loadPreset(name){
+  let data;
+  if(name==='annulus') data=genAnnulus(300,10,42);
+  else if(name==='annulus_dirty') data=genAnnulus(300,30,42);
+  else if(name==='gaussian') data=genGaussian(300,15,42);
+  else if(name==='moons') data=genMoons(300,15,42);
+  else if(name==='highdim') data=genHighDim(200,10,50,42);
+  
+  const header = data[0].map((_,i)=>i<data[0].length-1?'x'+(i+1):'label').join(',');
+  const csv = header+'\n'+data.map(r=>r.map(v=>typeof v==='number'?v.toFixed(3):v).join(',')).join('\n');
+  document.getElementById('csv-input').value=csv;
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// --- Core algorithms (pure JS) ---
+function eucDist(a,b){let s=0;for(let i=0;i<a.length;i++)s+=(a[i]-b[i])**2;return Math.sqrt(s)}
+
+function knnDistances(X,k){
+  const n=X.length, dists=[];
+  for(let i=0;i<n;i++){
+    const d=[];
+    for(let j=0;j<n;j++) if(i!==j) d.push(eucDist(X[i],X[j]));
+    d.sort((a,b)=>a-b);
+    dists.push(d.slice(0,k));
+  }
+  return dists;
+}
+
+function computeLOF(X,k){
+  const n=X.length;
+  const kd=knnDistances(X,k);
+  // reach-dist and LRD
+  const kDist=kd.map(d=>d[k-1]);
+  const lrd=new Float64Array(n);
+  for(let i=0;i<n;i++){
+    let sum=0;
+    // Approximate: use k-th distance as reach-distance proxy
+    for(let j=0;j<k;j++) sum+=Math.max(kd[i][j],kDist[i]);
+    lrd[i]=k/sum;
+  }
+  // LOF score
+  const scores=new Float64Array(n);
+  for(let i=0;i<n;i++){
+    // Approximate LOF: compare my LRD to average neighbor LRD
+    // We use a simplified version for speed
+    let neighborLrd=0;
+    for(let j=0;j<k;j++){
+      // Find approximate neighbor index (nearest j-th point)
+      let bestIdx=0,bestDist=Infinity;
+      for(let m=0;m<n;m++){
+        if(m===i)continue;
+        const d=eucDist(X[i],X[m]);
+        if(d<bestDist && d>=kd[i][Math.max(0,j-1)]){bestDist=d;bestIdx=m;}
+      }
+      neighborLrd+=lrd[bestIdx];
+    }
+    scores[i]=(neighborLrd/k)/lrd[i];
+  }
+  return Array.from(scores);
+}
+
+function computePHFilt(X){
+  // 1-NN distance = PH-Filtration score
+  const n=X.length;
+  const scores=[];
+  for(let i=0;i<n;i++){
+    let minD=Infinity;
+    for(let j=0;j<n;j++) if(i!==j){const d=eucDist(X[i],X[j]);if(d<minD)minD=d;}
+    scores.push(minD);
+  }
+  return scores;
+}
+
+function computeDTM(X, m){
+  // Distance-to-Measure: average distance to closest m*n neighbors
+  const n=X.length;
+  const kDtm=Math.max(2, Math.floor(m*n));
+  const scores=[];
+  for(let i=0;i<n;i++){
+    const dists=[];
+    for(let j=0;j<n;j++) if(i!==j) dists.push(eucDist(X[i],X[j]));
+    dists.sort((a,b)=>a-b);
+    let sumSq=0;
+    for(let j=0;j<kDtm;j++) sumSq+=dists[j]*dists[j];
+    scores.push(Math.sqrt(sumSq/kDtm));
+  }
+  return scores;
+}
+
+function auroc(labels,scores){
+  const pairs=labels.map((l,i)=>({l,s:scores[i]}));
+  const pos=pairs.filter(p=>p.l===1).map(p=>p.s);
+  const neg=pairs.filter(p=>p.l===0).map(p=>p.s);
+  if(!pos.length||!neg.length)return 0.5;
+  let concordant=0,total=pos.length*neg.length;
+  for(const p of pos)for(const n of neg)concordant+=(p>n)?1:(p===n)?0.5:0;
+  return concordant/total;
+}
+
+function topKPrecision(labels,scores,k){
+  const pairs=labels.map((l,i)=>({l,s:scores[i]}));
+  pairs.sort((a,b)=>b.s-a.s);
+  const topK=pairs.slice(0,k);
+  return topK.filter(p=>p.l===1).length/k;
+}
+
+// --- Main diagnostic ---
+function runDiagnostic(){
+  const csv=document.getElementById('csv-input').value.trim();
+  if(!csv){alert('Please paste data or select a preset.');return;}
+  
+  const lines=csv.split('\n').filter(l=>l.trim());
+  const header=lines[0].includes(',')?lines[0].split(','):null;
+  const startRow=header&&isNaN(parseFloat(header[0]))?1:0;
+  
+  const data=[];
+  for(let i=startRow;i<lines.length;i++){
+    const vals=lines[i].split(',').map(Number);
+    if(vals.some(isNaN))continue;
+    data.push(vals);
+  }
+  
+  if(data.length<10){alert('Need at least 10 rows.');return;}
+  
+  const d=data[0].length-1;
+  const X=data.map(r=>r.slice(0,d));
+  const labels=data.map(r=>r[d]);
+  const n=X.length;
+  const nAnom=labels.filter(l=>l===1).length;
+  const contam=nAnom/n;
+  const cStar=(20/n)/(1+20/n);
+  
+  // Standardize
+  const means=new Array(d).fill(0);
+  for(const x of X) x.forEach((v,i)=>means[i]+=v/n);
+  const stds=new Array(d).fill(0);
+  for(const x of X) x.forEach((v,i)=>stds[i]+=(v-means[i])**2/n);
+  stds.forEach((v,i)=>stds[i]=Math.sqrt(v)||1);
+  const Xstd=X.map(x=>x.map((v,i)=>(v-means[i])/stds[i]));
+  
+  // Compute scores
+  const t0=performance.now();
+  const lofScores=computeLOF(Xstd,Math.min(20,n-1));
+  const lofTime=performance.now()-t0;
+  
+  const t1=performance.now();
+  const phScores=computePHFilt(Xstd);
+  const phTime=performance.now()-t1;
+  
+  const t2=performance.now();
+  const dtmScores=computeDTM(Xstd, 0.2);
+  const dtmTime=performance.now()-t2;
+  
+  const lofAuroc=auroc(labels,lofScores);
+  const phAuroc=auroc(labels,phScores);
+  const dtmAuroc=auroc(labels,dtmScores);
+  const k10=Math.min(10,nAnom);
+  const lofP10=topKPrecision(labels,lofScores,k10);
+  const phP10=topKPrecision(labels,phScores,k10);
+  const dtmP10=topKPrecision(labels,dtmScores,k10);
+  
+  // Distance concentration
+  let maxD=0,minD=Infinity;
+  for(let i=0;i<Math.min(n,200);i++)for(let j=i+1;j<Math.min(n,200);j++){
+    const dd=eucDist(Xstd[i],Xstd[j]);
+    if(dd>maxD)maxD=dd;if(dd<minD&&dd>0)minD=dd;
+  }
+  const distRatio=maxD/minD;
+  
+  // Populate UI
+  document.getElementById('m-n').textContent=n;
+  document.getElementById('m-d').textContent=d;
+  document.getElementById('m-d-note').textContent=d>30?'⚠ high-d':'✓ ok';
+  document.getElementById('m-d-note').style.color=d>30?'var(--red)':'var(--green)';
+  document.getElementById('m-c').textContent=(contam*100).toFixed(1)+'%';
+  document.getElementById('m-c-note').textContent=contam>cStar?'> c*':'≤ c*';
+  document.getElementById('m-c-note').style.color=contam>cStar?'var(--red)':'var(--green)';
+  document.getElementById('m-cstar').textContent=(cStar*100).toFixed(1)+'%';
+  
+  document.getElementById('lof-auroc').textContent=lofAuroc.toFixed(3);
+  document.getElementById('ph-auroc').textContent=phAuroc.toFixed(3);
+  document.getElementById('dtm-auroc').textContent=dtmAuroc.toFixed(3);
+  document.getElementById('lof-p10').textContent=(lofP10*100).toFixed(0)+'%';
+  document.getElementById('ph-p10').textContent=(phP10*100).toFixed(0)+'%';
+  document.getElementById('dtm-p10').textContent=(dtmP10*100).toFixed(0)+'%';
+  document.getElementById('lof-time').textContent=lofTime.toFixed(0)+'ms';
+  document.getElementById('ph-time').textContent=phTime.toFixed(0)+'ms';
+  document.getElementById('dtm-time').textContent=dtmTime.toFixed(0)+'ms';
+  
+  // Verdict
+  const vb=document.getElementById('verdict-box');
+  const vt=document.getElementById('verdict-title');
+  const vtx=document.getElementById('verdict-text');
+  vb.className='verdict-box';
+  
+  const bestMethod = dtmAuroc >= lofAuroc && dtmAuroc >= phAuroc ? 'DTM' : 
+                     lofAuroc >= phAuroc ? 'LOF' : 'PH-Filtration';
+  const bestScore = Math.max(dtmAuroc, lofAuroc, phAuroc);
+  
+  if(d>30){
+    vb.classList.add('skip-ph');
+    vt.textContent='⚡ High dimensions (d='+d+') — use iForest or DTM';
+    vtx.textContent='Distance concentration degrades PH at '+d+' dimensions. DTM (AUROC '+dtmAuroc.toFixed(3)+') may still work if anomalies are geometrically separated. LOF: '+lofAuroc.toFixed(3)+'.';
+  } else if(contam>cStar && dtmAuroc>lofAuroc+0.02){
+    vb.classList.add('use-ph');
+    vt.textContent='✅ Contamination above c* — use DTM';
+    vtx.textContent='At '+(contam*100).toFixed(1)+'% contamination (above c*='+(cStar*100).toFixed(1)+'%), DTM outperforms LOF by '+(dtmAuroc-lofAuroc).toFixed(3)+' AUROC. DTM resists the phase transition because it measures absolute distance.';
+  } else if(contam<=cStar){
+    vb.classList.add('skip-ph');
+    vt.textContent='⚡ Below c* — LOF is sufficient';
+    vtx.textContent='At '+(contam*100).toFixed(1)+'% contamination (below c*='+(cStar*100).toFixed(1)+'%), LOF captures the geometric signal. Best method: '+bestMethod+' ('+bestScore.toFixed(3)+').';
+  } else {
+    vb.classList.add('maybe-ph');
+    vt.textContent='🤔 Near c* — compare LOF and DTM';
+    vtx.textContent='Contamination is near the transition threshold. LOF: '+lofAuroc.toFixed(3)+', DTM: '+dtmAuroc.toFixed(3)+'. If DTM consistently outperforms, your data may have the clustering structure that fools LOF.';
+  }
+  
+  // Reasoning
+  const reasons=[];
+  reasons.push(`<strong>Dimensions:</strong> d=${d}. ${d>30?'Distance concentration degrades PH and may affect DTM.':'Manageable — all methods have discriminative power.'}`);
+  reasons.push(`<strong>Contamination:</strong> ${(contam*100).toFixed(1)}% vs c* = ${(cStar*100).toFixed(1)}%. ${contam>cStar?'Above threshold — LOF\'s relative density estimates are vulnerable.':'Below threshold — LOF should work.'}`);
+  reasons.push(`<strong>Results:</strong> LOF = ${lofAuroc.toFixed(3)}, DTM = ${dtmAuroc.toFixed(3)}, PH-Filt = ${phAuroc.toFixed(3)}. ${Math.abs(dtmAuroc-lofAuroc)<0.02?'LOF and DTM are tied — contamination is low enough that relative density works.':dtmAuroc>lofAuroc?'DTM wins by '+(dtmAuroc-lofAuroc).toFixed(3)+' — the phase transition may be active.':'LOF leads — anomalies are geometrically separated.'}`);
+  document.getElementById('reasoning').innerHTML=reasons.join('<br>');
+  
+  document.getElementById('results').classList.add('show');
+}
+</script>
+</body>
+</html>

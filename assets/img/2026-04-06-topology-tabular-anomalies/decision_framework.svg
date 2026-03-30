@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 300" width="650" height="300">
+<style>text{font-family:"Source Sans 3",Arial,Helvetica,sans-serif}</style>
+<rect width="650" height="300" fill="#fafaf8"/>
+<polygon points="120,20 195,40 120,60 45,40" fill="#fef3c7" stroke="#333" stroke-width="1.2"/>
+<text x="120" y="44" text-anchor="middle" font-size="9" font-weight="600" fill="#333">d > 30?</text>
+<rect x="255" y="24" width="130" height="32" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="1.2"/>
+<text x="320" y="44" text-anchor="middle" font-size="8.5" font-weight="600" fill="#333">iForest / ECOD</text>
+<line x1="195" y1="40" x2="255" y2="40" stroke="#333"/>
+<text x="225" y="34" text-anchor="middle" font-size="8" fill="#059669">Yes</text>
+<line x1="120" y1="60" x2="120" y2="95" stroke="#333"/>
+<text x="130" y="80" font-size="8" fill="#dc2626">No</text>
+<polygon points="120,100 205,120 120,140 35,120" fill="#f0fdf4" stroke="#333" stroke-width="1.2"/>
+<text x="120" y="124" text-anchor="middle" font-size="9" font-weight="600" fill="#333">Topology plausible?</text>
+<rect x="255" y="104" width="130" height="32" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.2"/>
+<text x="320" y="124" text-anchor="middle" font-size="8.5" font-weight="600" fill="#333">LOF + iForest</text>
+<line x1="205" y1="120" x2="255" y2="120" stroke="#333"/>
+<text x="230" y="114" text-anchor="middle" font-size="8" fill="#dc2626">No</text>
+<text x="390" y="140" text-anchor="middle" font-size="7" fill="#888">100-1000× faster</text>
+<line x1="120" y1="140" x2="120" y2="175" stroke="#333"/>
+<text x="130" y="160" font-size="8" fill="#059669">Yes</text>
+<polygon points="120,180 195,200 120,220 45,200" fill="#fef2f2" stroke="#333" stroke-width="1.2"/>
+<text x="120" y="204" text-anchor="middle" font-size="9" font-weight="600" fill="#333">c > c* ≈ k/n?</text>
+<rect x="260" y="164" width="120" height="32" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.2"/>
+<text x="320" y="184" text-anchor="middle" font-size="8.5" font-weight="600" fill="#333">LOF (cheaper)</text>
+<line x1="195" y1="200" x2="260" y2="190" stroke="#333"/>
+<text x="230" y="190" font-size="8" fill="#dc2626">No</text>
+<rect x="260" y="214" width="120" height="32" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="1.2"/>
+<text x="320" y="234" text-anchor="middle" font-size="8.5" font-weight="600" fill="#333">DTM (m≈0.1-0.2)</text>
+<line x1="195" y1="200" x2="260" y2="235" stroke="#333"/>
+<text x="230" y="228" font-size="8" fill="#059669">Yes</text>
+<line x1="120" y1="220" x2="120" y2="260" stroke="#333"/>
+<rect x="50" y="259" width="140" height="32" rx="6" fill="#d1fae5" stroke="#059669" stroke-width="1.2"/>
+<text x="120" y="279" text-anchor="middle" font-size="8.5" font-weight="600" fill="#333">Run PH for diagnosis</text>
+<text x="180" y="258" font-size="7" fill="#888">structural insight needed?</text>
+<text x="490" y="42" font-size="7" fill="#888">Time: O(n log n)</text>
+<text x="490" y="122" font-size="7" fill="#888">Time: O(nk)</text>
+<text x="490" y="232" font-size="7" fill="#888">Time: O(nk)</text>
+<text x="200" y="292" font-size="7" fill="#888">Time: O(n³)</text>
+</svg>

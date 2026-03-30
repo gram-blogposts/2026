@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Anomaly Taxonomy</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #fafaf8;
+    --panel-bg: #ffffff;
+    --border: #e2dfd8;
+    --text: #2c2c2c;
+    --text-muted: #7a7a72;
+    --accent-red: #d64045;
+    --accent-blue: #3a86a8;
+    --accent-teal: #2a9d8f;
+    --accent-amber: #e9a820;
+    --normal: #3a86a8;
+    --anomaly: #d64045;
+    --highlight-bg: #f5f0e8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Source Serif 4', Georgia, serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 16px;
+    overflow-x: hidden;
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .panel:hover, .panel.active {
+    border-color: var(--accent-blue);
+    box-shadow: 0 2px 12px rgba(58, 134, 168, 0.12);
+  }
+
+  .panel.active {
+    border-width: 2px;
+    padding: 13px;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .type-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 3px;
+    color: white;
+    letter-spacing: 0.5px;
+  }
+
+  .type-i .type-badge { background: var(--accent-red); }
+  .type-ii .type-badge { background: var(--accent-amber); }
+  .type-iii .type-badge { background: var(--accent-teal); }
+  .type-iv .type-badge { background: var(--accent-blue); }
+
+  .panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .canvas-wrap {
+    width: 100%;
+    aspect-ratio: 1.4;
+    position: relative;
+    margin-bottom: 8px;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    background: #fcfcfa;
+  }
+
+  .panel-desc {
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--text-muted);
+  }
+
+  .panel-desc strong {
+    color: var(--text);
+  }
+
+  .insight-bar {
+    background: var(--highlight-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    min-height: 68px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+  }
+
+  .insight-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .insight-text {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--text);
+  }
+
+  .insight-text em {
+    font-style: italic;
+    color: var(--text-muted);
+  }
+
+  .method-pills {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+
+  .pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid;
+  }
+
+  .pill.win { background: #e8f5e9; border-color: #81c784; color: #2e7d32; }
+  .pill.tie { background: #fff8e1; border-color: #ffd54f; color: #f57f17; }
+  .pill.fail { background: #ffebee; border-color: #e57373; color: #c62828; }
+
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; }
+    body { padding: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="grid">
+    <div class="panel type-i active" data-type="i" onclick="select(this)">
+      <div class="panel-header">
+        <span class="type-badge">TYPE I</span>
+        <span class="panel-title">Isolated Outliers</span>
+      </div>
+      <div class="canvas-wrap"><canvas id="c1"></canvas></div>
+      <div class="panel-desc">Far from any cluster. Large NN distances, trivially separable. <strong>All methods detect these</strong> — no advantage to topology.</div>
+      <div class="method-pills">
+        <span class="pill win">iForest ✓</span>
+        <span class="pill win">LOF ✓</span>
+        <span class="pill win">PH-Filt ✓</span>
+        <span class="pill fail">PH-Disrupt ✗</span>
+      </div>
+    </div>
+
+    <div class="panel type-ii" data-type="ii" onclick="select(this)">
+      <div class="panel-header">
+        <span class="type-badge">TYPE II</span>
+        <span class="panel-title">Cluster-Boundary</span>
+      </div>
+      <div class="canvas-wrap"><canvas id="c2"></canvas></div>
+      <div class="panel-desc">Bridge points between clusters. Moderate density, hard to isolate by axis-aligned splits. <strong>LOF and PH excel; iForest fails.</strong></div>
+      <div class="method-pills">
+        <span class="pill fail">iForest ✗</span>
+        <span class="pill win">LOF ✓</span>
+        <span class="pill win">PH-Filt ✓</span>
+      </div>
+    </div>
+
+    <div class="panel type-iii" data-type="iii" onclick="select(this)">
+      <div class="panel-header">
+        <span class="type-badge">TYPE III</span>
+        <span class="panel-title">Structural / Topological</span>
+      </div>
+      <div class="canvas-wrap"><canvas id="c3"></canvas></div>
+      <div class="panel-desc">Inside holes — <strong>normal density but wrong topology</strong>. Formally: disrupts H₁ persistence. Invisible to density methods. PH's signature domain.</div>
+      <div class="method-pills">
+        <span class="pill tie">iForest ~</span>
+        <span class="pill tie">LOF ~ (low c)</span>
+        <span class="pill win">PH-Man ✓✓</span>
+      </div>
+    </div>
+
+    <div class="panel type-iv" data-type="iv" onclick="select(this)">
+      <div class="panel-header">
+        <span class="type-badge">TYPE IV</span>
+        <span class="panel-title">Subspace</span>
+      </div>
+      <div class="canvas-wrap"><canvas id="c4"></canvas></div>
+      <div class="panel-desc">Anomalous only in specific feature combinations. <strong>Challenging for all methods</strong>; PH on full-space may miss these.</div>
+      <div class="method-pills">
+        <span class="pill tie">iForest ~</span>
+        <span class="pill tie">LOF ~</span>
+        <span class="pill fail">PH ~</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight-bar" id="insight">
+    <div class="insight-icon">💡</div>
+    <div class="insight-text" id="insight-text">
+      <strong>Type I</strong> outliers are the easy case. Every detector sees them — which is exactly why benchmarks dominated by Type I anomalies overestimate simple methods. <em>Click each panel to explore.</em>
+    </div>
+  </div>
+</div>
+
+<script>
+const insights = {
+  i: '<strong>Type I</strong> outliers are the easy case. Every detector sees them — which is exactly why benchmarks dominated by Type I anomalies overestimate simple methods and make topology seem unnecessary.',
+  ii: '<strong>Type II</strong> bridge anomalies expose iForest\'s axis-aligned blind spot (AUROC 0.19 on Two Moons). LOF\'s local density comparison catches them naturally. PH works too — but isn\'t needed here.',
+  iii: '<strong>Type III</strong> is PH\'s domain. These points have <em>normal density</em> — they\'re surrounded by data — but they fill a topological hole. LOF can\'t see them because there\'s nothing locally unusual. This is where topology earns its compute cost.',
+  iv: '<strong>Type IV</strong> is everyone\'s nightmare. The anomaly is invisible in any single feature and only emerges in a specific subspace. Full-space PH wastes compute on irrelevant dimensions. This is an open problem.'
+};
+
+function select(el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const type = el.dataset.type;
+  document.getElementById('insight-text').innerHTML = insights[type];
+}
+
+// --- Drawing ---
+function drawAll() {
+  drawType1(); drawType2(); drawType3(); drawType4();
+}
+
+function setupCanvas(id) {
+  const c = document.getElementById(id);
+  const r = c.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  c.width = r.width * dpr;
+  c.height = r.height * dpr;
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, w: r.width, h: r.height };
+}
+
+function dot(ctx, x, y, r, color, stroke) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+}
+
+const seed = (s) => () => { s = Math.sin(s) * 10000; return s - Math.floor(s); };
+
+function drawType1() {
+  const { ctx, w, h } = setupCanvas('c1');
+  const rng = seed(42);
+  // Gaussian cluster
+  for (let i = 0; i < 120; i++) {
+    const x = w*0.45 + (rng()-0.5)*w*0.35;
+    const y = h*0.5 + (rng()-0.5)*h*0.45;
+    dot(ctx, x, y, 2.5, 'rgba(58,134,168,0.5)');
+  }
+  // Isolated outliers
+  const outliers = [[w*0.88, h*0.12], [w*0.08, h*0.88], [w*0.92, h*0.82]];
+  outliers.forEach(([x,y]) => {
+    dot(ctx, x, y, 5, '#d64045', '#a02020');
+    // dashed circle
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(214,64,69,0.3)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.setLineDash([]);
+  });
+}
+
+function drawType2() {
+  const { ctx, w, h } = setupCanvas('c2');
+  const rng = seed(7);
+  // Two moons
+  for (let i = 0; i < 80; i++) {
+    const a = Math.PI * rng();
+    const x = w*0.35 + Math.cos(a)*w*0.22 + (rng()-0.5)*8;
+    const y = h*0.45 - Math.sin(a)*h*0.22 + (rng()-0.5)*8;
+    dot(ctx, x, y, 2.5, 'rgba(58,134,168,0.5)');
+  }
+  for (let i = 0; i < 80; i++) {
+    const a = Math.PI + Math.PI * rng();
+    const x = w*0.65 + Math.cos(a)*w*0.22 + (rng()-0.5)*8;
+    const y = h*0.55 - Math.sin(a)*h*0.22 + (rng()-0.5)*8;
+    dot(ctx, x, y, 2.5, 'rgba(58,134,168,0.5)');
+  }
+  // Bridge anomalies
+  for (let i = 0; i < 5; i++) {
+    const x = w*0.42 + rng()*w*0.16;
+    const y = h*0.4 + rng()*h*0.2;
+    dot(ctx, x, y, 5, '#d64045', '#a02020');
+  }
+}
+
+function drawType3() {
+  const { ctx, w, h } = setupCanvas('c3');
+  const rng = seed(13);
+  const cx = w/2, cy = h/2, R = Math.min(w,h)*0.36;
+  // Annulus
+  for (let i = 0; i < 150; i++) {
+    const a = rng() * Math.PI * 2;
+    const r = R * 0.7 + rng() * R * 0.3;
+    dot(ctx, cx + Math.cos(a)*r, cy + Math.sin(a)*r, 2.5, 'rgba(58,134,168,0.5)');
+  }
+  // Interior anomalies
+  for (let i = 0; i < 6; i++) {
+    const a = rng() * Math.PI * 2;
+    const r = rng() * R * 0.45;
+    dot(ctx, cx + Math.cos(a)*r, cy + Math.sin(a)*r, 5, '#d64045', '#a02020');
+  }
+  // Draw the "hole" label
+  ctx.font = '11px JetBrains Mono';
+  ctx.fillStyle = 'rgba(42,157,143,0.6)';
+  ctx.textAlign = 'center';
+  ctx.fillText('H₁ loop', cx, cy - 4);
+  ctx.fillText('(hole)', cx, cy + 10);
+}
+
+function drawType4() {
+  const { ctx, w, h } = setupCanvas('c4');
+  const rng = seed(99);
+  // Correlated Gaussian (ellipse)
+  for (let i = 0; i < 120; i++) {
+    const u = (rng()-0.5)*2, v = (rng()-0.5)*2;
+    const x = w*0.5 + (u*0.8 + v*0.2)*w*0.28;
+    const y = h*0.5 + (u*0.2 + v*0.8)*h*0.28;
+    dot(ctx, x, y, 2.5, 'rgba(58,134,168,0.5)');
+  }
+  // Subspace anomalies — normal in x, normal in y, but off-correlation
+  const anoms = [[w*0.28, h*0.28], [w*0.72, h*0.72], [w*0.25, h*0.7], [w*0.75, h*0.3]];
+  anoms.forEach(([x,y]) => dot(ctx, x, y, 5, '#d64045', '#a02020'));
+  // correlation line
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(w*0.15, h*0.15); ctx.lineTo(w*0.85, h*0.85);
+  ctx.strokeStyle = 'rgba(58,134,168,0.2)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+drawAll();
+window.addEventListener('resize', drawAll);
+</script>
+</body>
+</html>

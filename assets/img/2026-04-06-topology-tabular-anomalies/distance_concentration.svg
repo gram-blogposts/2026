@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 250" width="600" height="250">
+<style>text{font-family:"Source Sans 3",Arial,Helvetica,sans-serif}</style>
+<rect width="600" height="250" fill="#fafaf8"/>
+<text x="300" y="16" text-anchor="middle" font-size="11" font-weight="600" fill="#333">Distance Concentration: max/min Ratio vs Dimensionality</text>
+<line x1="65" y1="25" x2="65" y2="210" stroke="#ccc"/>
+<line x1="65" y1="210" x2="580" y2="210" stroke="#ccc"/>
+<text x="65.0" y="225" text-anchor="middle" font-size="8" fill="#aaa">d=2</text>
+<line x1="65.0" y1="25" x2="65.0" y2="210" stroke="#eee"/>
+<text x="138.57142857142856" y="225" text-anchor="middle" font-size="8" fill="#aaa">d=5</text>
+<line x1="138.57142857142856" y1="25" x2="138.57142857142856" y2="210" stroke="#eee"/>
+<text x="212.14285714285714" y="225" text-anchor="middle" font-size="8" fill="#aaa">d=10</text>
+<line x1="212.14285714285714" y1="25" x2="212.14285714285714" y2="210" stroke="#eee"/>
+<text x="285.71428571428567" y="225" text-anchor="middle" font-size="8" fill="#aaa">d=20</text>
+<line x1="285.71428571428567" y1="25" x2="285.71428571428567" y2="210" stroke="#eee"/>
+<text x="359.2857142857143" y="225" text-anchor="middle" font-size="8" fill="#aaa">d=30</text>
+<line x1="359.2857142857143" y1="25" x2="359.2857142857143" y2="210" stroke="#eee"/>
+<text x="432.8571428571429" y="225" text-anchor="middle" font-size="8" fill="#aaa">d=50</text>
+<line x1="432.8571428571429" y1="25" x2="432.8571428571429" y2="210" stroke="#eee"/>
+<text x="506.4285714285714" y="225" text-anchor="middle" font-size="8" fill="#aaa">d=100</text>
+<line x1="506.4285714285714" y1="25" x2="506.4285714285714" y2="210" stroke="#eee"/>
+<text x="580.0" y="225" text-anchor="middle" font-size="8" fill="#aaa">d=200</text>
+<line x1="580.0" y1="25" x2="580.0" y2="210" stroke="#eee"/>
+<line x1="65" y1="209.0361993550174" x2="580" y2="209.0361993550174" stroke="#dc2626" stroke-dasharray="4,3"/>
+<text x="582" y="212.0361993550174" font-size="8" fill="#dc2626">ratio ≈ 3 (PH fails)</text>
+<circle cx="65.0" cy="41.8" r="4" fill="rgb(5, 150, 105)"/>
+<text x="65.0" y="33.81818181818181" text-anchor="middle" font-size="7" font-weight="600" fill="rgb(5, 150, 105)">523.5</text>
+<circle cx="138.6" cy="201.4" r="4" fill="rgb(5, 150, 105)"/>
+<text x="138.6" y="193.43135496246578" text-anchor="middle" font-size="7" font-weight="600" fill="rgb(5, 150, 105)">26.7</text>
+<circle cx="212.1" cy="208.1" r="4" fill="rgb(5, 150, 105)"/>
+<text x="212.1" y="200.103235329618" text-anchor="middle" font-size="7" font-weight="600" fill="rgb(5, 150, 105)">5.9</text>
+<circle cx="285.7" cy="208.9" r="4" fill="rgb(5, 150, 105)"/>
+<text x="285.7" y="200.88495025087713" text-anchor="middle" font-size="7" font-weight="600" fill="rgb(5, 150, 105)">3.5</text>
+<circle cx="359.3" cy="209.1" r="4" fill="rgb(9, 147, 103)"/>
+<text x="359.3" y="201.0564684339489" text-anchor="middle" font-size="7" font-weight="600" fill="rgb(9, 147, 103)">2.9</text>
+<circle cx="432.9" cy="209.3" r="4" fill="rgb(56, 123, 89)"/>
+<text x="432.9" y="201.26595829020505" text-anchor="middle" font-size="7" font-weight="600" fill="rgb(56, 123, 89)">2.3</text>
+<circle cx="506.4" cy="209.4" r="4" fill="rgb(90, 105, 78)"/>
+<text x="506.4" y="201.42038722882236" text-anchor="middle" font-size="7" font-weight="600" fill="rgb(90, 105, 78)">1.8</text>
+<circle cx="580.0" cy="209.5" r="4" fill="rgb(110, 94, 72)"/>
+<text x="580.0" y="201.51038747950292" text-anchor="middle" font-size="7" font-weight="600" fill="rgb(110, 94, 72)">1.5</text>
+<path d="M 65.0,41.8 138.6,201.4 212.1,208.1 285.7,208.9 359.3,209.1 432.9,209.3 506.4,209.4 580.0,209.5" stroke="#333" stroke-width="1.5" fill="none"/>
+<text x="300" y="245" text-anchor="middle" font-size="9" fill="#888">Dimensionality d</text>
+<text x="18" y="117" text-anchor="middle" font-size="9" fill="#888" transform="rotate(-90,18,117)">max/min distance ratio</text>
+</svg>

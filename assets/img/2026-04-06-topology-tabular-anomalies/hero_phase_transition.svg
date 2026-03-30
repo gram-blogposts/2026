@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 380" width="680" height="380">
+<rect width="680" height="380" fill="white"/>
+<style>text{font-family:"Source Sans 3",Arial,Helvetica,sans-serif}</style>
+<text x="340" y="22" text-anchor="middle" font-size="15" font-weight="bold" fill="#1a1a2e">LOF Collapses at c* — DTM Holds</text>
+<text x="340" y="38" text-anchor="middle" font-size="10" fill="#888">Annulus, n=500, k=20. The phase transition at c*≈k/n = 4%.</text>
+<rect x="217.33333333333334" y="50" width="432.66666666666663" height="275" fill="#fef2f2" opacity="0.5"/>
+<line x1="60" y1="325.0" x2="650" y2="325.0" stroke="#eee"/>
+<text x="52" y="329.0" text-anchor="end" font-size="10" fill="#aaa">0.5</text>
+<line x1="60" y1="270.0" x2="650" y2="270.0" stroke="#eee"/>
+<text x="52" y="274.0" text-anchor="end" font-size="10" fill="#aaa">0.6</text>
+<line x1="60" y1="215.00000000000003" x2="650" y2="215.00000000000003" stroke="#eee"/>
+<text x="52" y="219.00000000000003" text-anchor="end" font-size="10" fill="#aaa">0.7</text>
+<line x1="60" y1="159.99999999999997" x2="650" y2="159.99999999999997" stroke="#eee"/>
+<text x="52" y="163.99999999999997" text-anchor="end" font-size="10" fill="#aaa">0.8</text>
+<line x1="60" y1="104.99999999999999" x2="650" y2="104.99999999999999" stroke="#eee"/>
+<text x="52" y="108.99999999999999" text-anchor="end" font-size="10" fill="#aaa">0.9</text>
+<line x1="60" y1="50.0" x2="650" y2="50.0" stroke="#eee"/>
+<text x="52" y="54.0" text-anchor="end" font-size="10" fill="#aaa">1.0</text>
+<line x1="60.0" y1="50" x2="60.0" y2="325" stroke="#eee"/>
+<text x="60.0" y="340" text-anchor="middle" font-size="10" fill="#aaa">0%</text>
+<line x1="256.66666666666663" y1="50" x2="256.66666666666663" y2="325" stroke="#eee"/>
+<text x="256.66666666666663" y="340" text-anchor="middle" font-size="10" fill="#aaa">5%</text>
+<line x1="453.3333333333333" y1="50" x2="453.3333333333333" y2="325" stroke="#eee"/>
+<text x="453.3333333333333" y="340" text-anchor="middle" font-size="10" fill="#aaa">10%</text>
+<line x1="650.0" y1="50" x2="650.0" y2="325" stroke="#eee"/>
+<text x="650.0" y="340" text-anchor="middle" font-size="10" fill="#aaa">15%</text>
+<line x1="217.33333333333334" y1="50" x2="217.33333333333334" y2="325" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="5,3"/>
+<text x="217.33333333333334" y="45" text-anchor="middle" font-size="10" font-weight="bold" fill="#dc2626">c* ≈ 4%</text>
+<path d="M60.0,50.0 L99.3,50.0 L138.7,50.0 L178.0,50.0 L217.3,50.5 L256.7,51.1 L335.3,52.8 L453.3,55.5 L532.0,58.3 L650.0,62.1" stroke="#d97706" stroke-width="2.5" fill="none"/>
+<circle cx="60.0" cy="50.0" r="3" fill="#d97706"/>
+<circle cx="99.3" cy="50.0" r="3" fill="#d97706"/>
+<circle cx="138.7" cy="50.0" r="3" fill="#d97706"/>
+<circle cx="178.0" cy="50.0" r="3" fill="#d97706"/>
+<circle cx="217.3" cy="50.5" r="3" fill="#d97706"/>
+<circle cx="256.7" cy="51.1" r="3" fill="#d97706"/>
+<circle cx="335.3" cy="52.8" r="3" fill="#d97706"/>
+<circle cx="453.3" cy="55.5" r="3" fill="#d97706"/>
+<circle cx="532.0" cy="58.3" r="3" fill="#d97706"/>
+<circle cx="650.0" cy="62.1" r="3" fill="#d97706"/>
+<path d="M60.0,50.0 L99.3,50.0 L138.7,50.0 L178.0,55.5 L217.3,77.5 L256.7,110.5 L335.3,171.0 L453.3,226.0 L532.0,237.0 L650.0,248.0" stroke="#2563eb" stroke-width="2.5" fill="none"/>
+<circle cx="60.0" cy="50.0" r="3" fill="#2563eb"/>
+<circle cx="99.3" cy="50.0" r="3" fill="#2563eb"/>
+<circle cx="138.7" cy="50.0" r="3" fill="#2563eb"/>
+<circle cx="178.0" cy="55.5" r="3" fill="#2563eb"/>
+<circle cx="217.3" cy="77.5" r="3" fill="#2563eb"/>
+<circle cx="256.7" cy="110.5" r="3" fill="#2563eb"/>
+<circle cx="335.3" cy="171.0" r="3" fill="#2563eb"/>
+<circle cx="453.3" cy="226.0" r="3" fill="#2563eb"/>
+<circle cx="532.0" cy="237.0" r="3" fill="#2563eb"/>
+<circle cx="650.0" cy="248.0" r="3" fill="#2563eb"/>
+<text x="461.3333333333333" y="217.99999999999997" font-size="11" font-weight="bold" fill="#2563eb">LOF: 0.68</text>
+<text x="461.3333333333333" y="231.99999999999997" font-size="9" fill="#6b7280">phantom cluster → blind</text>
+<text x="461.3333333333333" y="59.50000000000001" font-size="11" font-weight="bold" fill="#d97706">DTM: 0.990</text>
+<text x="461.3333333333333" y="73.5" font-size="9" fill="#6b7280">absolute distance → immune</text>
+<line x1="450.3333333333333" y1="58.50000000000001" x2="450.3333333333333" y2="222.99999999999997" stroke="#333" stroke-width="1"/>
+<text x="445.3333333333333" y="144.75" text-anchor="end" font-size="10" font-weight="bold" fill="#333">Δ=0.31</text>
+<text x="340" y="372" text-anchor="middle" font-size="11" fill="#555">Contamination rate c</text>
+<text x="16" y="190" text-anchor="middle" font-size="11" fill="#555" transform="rotate(-90,16,190)">AUROC</text>
+<line x1="70" y1="360" x2="90" y2="360" stroke="#2563eb" stroke-width="2.5"/>
+<text x="95" y="364" font-size="10" fill="#333">LOF (k=20)</text>
+<line x1="180" y1="360" x2="200" y2="360" stroke="#d97706" stroke-width="2.5"/>
+<text x="205" y="364" font-size="10" fill="#333">DTM (m=0.2)</text>
+<line x1="300" y1="360" x2="320" y2="360" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="5,3"/>
+<text x="325" y="364" font-size="10" fill="#333">c* = k/n</text>
+</svg>

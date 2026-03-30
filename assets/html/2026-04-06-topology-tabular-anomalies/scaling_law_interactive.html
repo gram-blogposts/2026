@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Universal Scaling Law</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #fafaf8;
+    --panel: #ffffff;
+    --border: #e2dfd8;
+    --text: #2c2c2c;
+    --muted: #7a7a72;
+    --k10: #d64045;
+    --k20: #3a86a8;
+    --k50: #2a9d8f;
+    --fit: #2c2c2c;
+    --region-lo: rgba(58,134,168,0.06);
+    --region-hi: rgba(42,157,143,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Source Serif 4', Georgia, serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 16px;
+  }
+
+  .container { max-width: 920px; margin: 0 auto; }
+
+  .panels {
+    display: grid;
+    grid-template-columns: 5fr 3fr;
+    gap: 12px;
+  }
+
+  .chart-panel, .stats-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+  }
+
+  .chart-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .chart-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  canvas { width: 100%; border-radius: 4px; }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+
+  .legend-line {
+    width: 18px; height: 2px;
+  }
+
+  .stats-panel h3 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0ede6;
+    font-size: 12.5px;
+  }
+
+  .stat-label { color: var(--muted); }
+
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    font-size: 12px;
+  }
+
+  .stat-value.highlight { color: var(--k50); font-weight: 600; }
+
+  .equation-box {
+    background: #f8f6f0;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    margin-top: 14px;
+    text-align: center;
+  }
+
+  .equation {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .controls {
+    margin-top: 12px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .control-group label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--k50);
+  }
+
+  .insight-row {
+    background: #f8f6f0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .insight-row strong { color: var(--text); }
+
+  @media (max-width: 680px) {
+    .panels { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="panels">
+    <div class="chart-panel">
+      <div class="chart-title">PH Advantage Collapses to a Single Curve</div>
+      <div class="chart-subtitle">Normalized by c* = k/n — three k values, one universal function</div>
+      <canvas id="chart" height="320"></canvas>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--k10)"></div>k = 10 (c* = 2.0%)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--k20)"></div>k = 20 (c* = 4.0%)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--k50)"></div>k = 50 (c* = 10.0%)</div>
+        <div class="legend-item"><div class="legend-line" style="background:var(--fit)"></div>Sigmoid fit (R² = 0.80)</div>
+      </div>
+      <div class="controls">
+        <div class="control-group">
+          <input type="checkbox" id="show-k10" checked onchange="redraw()"><label for="show-k10">k=10</label>
+        </div>
+        <div class="control-group">
+          <input type="checkbox" id="show-k20" checked onchange="redraw()"><label for="show-k20">k=20</label>
+        </div>
+        <div class="control-group">
+          <input type="checkbox" id="show-k50" checked onchange="redraw()"><label for="show-k50">k=50</label>
+        </div>
+        <div class="control-group">
+          <input type="checkbox" id="show-fit" checked onchange="redraw()"><label for="show-fit">Fitted curve</label>
+        </div>
+        <div class="control-group">
+          <input type="checkbox" id="show-regions" checked onchange="redraw()"><label for="show-regions">Regime shading</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-panel">
+      <h3>Scaling Law Parameters</h3>
+      <div class="stat-row">
+        <span class="stat-label">Amplitude A</span>
+        <span class="stat-value">0.255 ± 0.007</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Sharpness B</span>
+        <span class="stat-value">22.2 ± 10.3</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Center C</span>
+        <span class="stat-value">1.23 ± 0.02</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">R²</span>
+        <span class="stat-value highlight">0.80</span>
+      </div>
+
+      <h3 style="margin-top:16px">At 10% Contamination</h3>
+      <div class="stat-row">
+        <span class="stat-label">LOF AUROC</span>
+        <span class="stat-value">0.640</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">PH AUROC</span>
+        <span class="stat-value highlight">0.978</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Cohen's d</span>
+        <span class="stat-value highlight">17.1</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Wilcoxon p</span>
+        <span class="stat-value">9.3×10⁻¹⁰</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">P(PH > LOF)</span>
+        <span class="stat-value highlight">1.000</span>
+      </div>
+
+      <div class="equation-box">
+        <div class="equation">
+          Δ AUROC(c/c*) =<br>
+          0.255 / (1 + e<sup>−22.2(c/c* − 1.23)</sup>)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight-row" id="insight">
+    <strong>Key insight:</strong> When contamination is normalized by the critical threshold c* = k/n, 
+    the PH advantage over LOF follows a single universal curve regardless of k. Below c/c* ≈ 1, 
+    topology adds nothing. Above c/c* ≈ 1.5, PH gains ~0.25 AUROC. The transition is sharp — not gradual.
+  </div>
+</div>
+
+<script>
+// Precomputed data points (from actual experiments)
+const data = {
+  10: [
+    [0.50,0.001],[1.00,0.003],[1.27,0.095],[1.52,0.195],[2.03,0.265],[2.54,0.298],
+    [3.05,0.310],[3.55,0.282],[4.06,0.268],[5.08,0.275],[6.09,0.250],[7.61,0.230],
+    [8.63,0.225],[10.15,0.210]
+  ],
+  20: [
+    [0.26,0.000],[0.52,0.001],[0.78,0.002],[1.04,0.005],[1.30,0.120],[1.56,0.215],
+    [1.82,0.258],[2.08,0.275],[2.60,0.295],[3.12,0.310],[3.64,0.285],[4.16,0.260],
+    [4.68,0.248],[5.20,0.232]
+  ],
+  50: [
+    [0.11,0.000],[0.22,0.001],[0.33,0.000],[0.44,0.001],[0.55,0.001],[0.66,0.002],
+    [0.77,0.003],[0.88,0.005],[1.10,0.050],[1.32,0.165],[1.54,0.215],[1.76,0.235],
+    [1.98,0.248],[2.20,0.250]
+  ]
+};
+
+const errorBars = { 10: 0.06, 20: 0.05, 50: 0.04 };
+const colors = { 10: '#d64045', 20: '#3a86a8', 50: '#2a9d8f' };
+
+function sigmoid(x) {
+  return 0.255 / (1 + Math.exp(-22.2 * (x - 1.23)));
+}
+
+function redraw() {
+  const canvas = document.getElementById('chart');
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+
+  const margin = { top: 12, right: 20, bottom: 40, left: 52 };
+  const cw = W - margin.left - margin.right;
+  const ch = H - margin.top - margin.bottom;
+
+  const xMax = 11, yMin = -0.05, yMax = 0.42;
+  const toX = x => margin.left + (x / xMax) * cw;
+  const toY = y => margin.top + ((yMax - y) / (yMax - yMin)) * ch;
+
+  // Background
+  ctx.fillStyle = '#fcfcfa';
+  ctx.fillRect(0, 0, W, H);
+
+  // Regime shading
+  if (document.getElementById('show-regions').checked) {
+    // Below c*
+    ctx.fillStyle = 'rgba(58,134,168,0.04)';
+    ctx.fillRect(toX(0), toY(yMax), toX(1) - toX(0), toY(yMin) - toY(yMax));
+    // Above c*
+    ctx.fillStyle = 'rgba(42,157,143,0.05)';
+    ctx.fillRect(toX(1), toY(yMax), toX(xMax) - toX(1), toY(yMin) - toY(yMax));
+
+    ctx.font = '11px JetBrains Mono';
+    ctx.fillStyle = 'rgba(58,134,168,0.5)';
+    ctx.textAlign = 'center';
+    ctx.fillText('LOF suffices', toX(0.5), toY(yMax) + 20);
+    ctx.fillStyle = 'rgba(42,157,143,0.5)';
+    ctx.fillText('PH wins', toX(3), toY(yMax) + 20);
+  }
+
+  // Grid
+  ctx.strokeStyle = '#eee8e0';
+  ctx.lineWidth = 0.5;
+  for (let y = 0; y <= 0.4; y += 0.1) {
+    ctx.beginPath(); ctx.moveTo(toX(0), toY(y)); ctx.lineTo(toX(xMax), toY(y)); ctx.stroke();
+  }
+  for (let x = 0; x <= 10; x += 2) {
+    ctx.beginPath(); ctx.moveTo(toX(x), toY(yMin)); ctx.lineTo(toX(x), toY(yMax)); ctx.stroke();
+  }
+
+  // c* = 1 vertical line
+  ctx.strokeStyle = '#bbb5a8';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(toX(1), toY(yMin)); ctx.lineTo(toX(1), toY(yMax)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.font = '10px JetBrains Mono';
+  ctx.fillStyle = '#9a9490';
+  ctx.textAlign = 'center';
+  ctx.fillText('c/c* = 1', toX(1), toY(yMax) + 34);
+
+  // Zero line
+  ctx.strokeStyle = '#d6d0c6';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(toX(0), toY(0)); ctx.lineTo(toX(xMax), toY(0)); ctx.stroke();
+
+  // Fitted curve
+  if (document.getElementById('show-fit').checked) {
+    ctx.strokeStyle = '#2c2c2c';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let x = 0; x <= xMax; x += 0.05) {
+      const px = toX(x), py = toY(sigmoid(x));
+      x === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+
+  // Data points
+  [10, 20, 50].forEach(k => {
+    const key = `show-k${k}`;
+    if (!document.getElementById(key).checked) return;
+    const col = colors[k];
+    const pts = data[k];
+    const eb = errorBars[k];
+
+    pts.forEach(([x, y]) => {
+      const px = toX(x), py = toY(y);
+      // Error bar
+      ctx.strokeStyle = col;
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(px, toY(y - eb)); ctx.lineTo(px, toY(y + eb)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px-2, toY(y-eb)); ctx.lineTo(px+2, toY(y-eb)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px-2, toY(y+eb)); ctx.lineTo(px+2, toY(y+eb)); ctx.stroke();
+      ctx.globalAlpha = 1;
+      // Point
+      ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI*2);
+      ctx.fillStyle = col; ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.8; ctx.stroke();
+    });
+  });
+
+  // Axes
+  ctx.strokeStyle = '#8a8480';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(toX(0), toY(yMin)); ctx.lineTo(toX(0), toY(yMax)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(toX(0), toY(yMin)); ctx.lineTo(toX(xMax), toY(yMin)); ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#7a7a72';
+  ctx.font = '11px Source Serif 4';
+  ctx.textAlign = 'center';
+  ctx.fillText('Normalized contamination (c / c*)', W/2, H - 4);
+
+  ctx.save();
+  ctx.translate(14, H/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('AUROC advantage (PH − LOF)', 0, 0);
+  ctx.restore();
+
+  // Tick labels
+  ctx.font = '10px JetBrains Mono';
+  ctx.fillStyle = '#9a9490';
+  ctx.textAlign = 'center';
+  for (let x = 0; x <= 10; x += 2) ctx.fillText(x, toX(x), toY(yMin) + 14);
+  ctx.textAlign = 'right';
+  for (let y = 0; y <= 0.4; y += 0.1) ctx.fillText(y.toFixed(1), toX(0) - 6, toY(y) + 4);
+}
+
+redraw();
+window.addEventListener('resize', redraw);
+</script>
+</body>
+</html>
