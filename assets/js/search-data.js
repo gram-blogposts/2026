@@ -51,7 +51,18 @@ ninja.data = [{
               handler: () => {
                 window.location.href = "https://gram-blogposts.github.io/2024/";
               },
-            },{id: "post-crystalite-a-lightweight-transformer-for-efficient-crystal-modeling",
+            },{id: "post-the-role-of-directionality-in-graph-neural-networks",
+        
+          title: "The Role of Directionality in Graph Neural Networks",
+        
+        description: "We investigate how graph directionality may influence GNN performance across homophilic and heterophilic benchmarks, suggesting it could be an underexplored factor.",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/2026/blog/2026/graph_directionality_matters/";
+          
+        },
+      },{id: "post-crystalite-a-lightweight-transformer-for-efficient-crystal-modeling",
         
           title: "Crystalite: A Lightweight Transformer for Efficient Crystal Modeling",
         
