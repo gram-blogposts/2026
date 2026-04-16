@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Results Heatmap</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #fafaf8; --panel: #fff; --border: #e2dfd8;
+    --text: #2c2c2c; --muted: #7a7a72;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Source Serif 4', Georgia, serif;
+    background: var(--bg); color: var(--text);
+    padding: 16px;
+  }
+
+  .container { max-width: 920px; margin: 0 auto; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px;
+  }
+
+  .title { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .subtitle { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    text-align: center;
+    padding: 6px 10px;
+    border-bottom: 2px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  thead th:first-child { text-align: left; cursor: default; }
+  thead th:hover:not(:first-child) { color: var(--text); }
+
+  tbody td {
+    text-align: center;
+    padding: 8px 10px;
+    border-bottom: 1px solid #f0ede6;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 400;
+    position: relative;
+    transition: all 0.15s;
+  }
+
+  tbody td:first-child {
+    text-align: left;
+    font-family: 'Source Serif 4', serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    padding-left: 4px;
+  }
+
+  .cell-val { position: relative; z-index: 1; }
+  .cell-bg {
+    position: absolute; inset: 2px; border-radius: 3px; z-index: 0;
+  }
+
+  .best { font-weight: 600; }
+
+  tr:hover td { background: rgba(42,157,143,0.04); }
+
+  .sort-arrow { font-size: 9px; margin-left: 2px; opacity: 0.4; }
+  .sort-arrow.active { opacity: 1; }
+
+  .type-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 2px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  .t-i { background: #ffebee; color: #c62828; }
+  .t-ii { background: #fff8e1; color: #f57f17; }
+  .t-iii { background: #e0f2f1; color: #00695c; }
+  .t-iv { background: #e3f2fd; color: #1565c0; }
+  .t-mix { background: #f3e5f5; color: #6a1b9a; }
+
+  .footnote {
+    margin-top: 10px;
+    font-size: 11.5px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .controls-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  .sort-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--bg);
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .sort-btn:hover, .sort-btn.active {
+    border-color: #2a9d8f;
+    color: #2a9d8f;
+    background: rgba(42,157,143,0.06);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <div class="title">The Complete Synthetic Results</div>
+    <div class="subtitle">AUROC across five geometries × five methods. Click column headers to sort. Best per-row is bold.</div>
+
+    <table id="heatmap">
+      <thead>
+        <tr>
+          <th>Dataset</th>
+          <th onclick="sortBy(1)">iForest <span class="sort-arrow" id="s1">▼</span></th>
+          <th onclick="sortBy(2)">LOF <span class="sort-arrow" id="s2">▼</span></th>
+          <th onclick="sortBy(3)">PH-Filt <span class="sort-arrow" id="s3">▼</span></th>
+          <th onclick="sortBy(4)">PH-Man <span class="sort-arrow" id="s4">▼</span></th>
+          <th onclick="sortBy(5)">PH-Disrupt <span class="sort-arrow" id="s5">▼</span></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+    <div class="controls-row">
+      <span style="font-size:11px;color:var(--muted);line-height:26px">Sort by:</span>
+      <button class="sort-btn" onclick="sortBy(1)">iForest</button>
+      <button class="sort-btn" onclick="sortBy(2)">LOF</button>
+      <button class="sort-btn" onclick="sortBy(3)">PH-Filt</button>
+      <button class="sort-btn" onclick="sortBy(4)">PH-Man</button>
+      <button class="sort-btn active" onclick="sortBy(0)">Original</button>
+    </div>
+
+    <div class="footnote">
+      Three patterns: <strong>iForest's non-convex blind spot</strong> (0.19 on Two Moons),
+      <strong>LOF's quiet dominance</strong> (≥ 0.72 everywhere), and
+      <strong>PH's costly specialization</strong> — PH-Disruption inverts on Type I (0.07).
+      Choosing the wrong PH variant is worse than using no topology.
+    </div>
+  </div>
+</div>
+
+<script>
+const rows = [
+  { name:'Gaussian + Outliers', type:'I', cls:'t-i',
+    vals:[0.96, 0.99, 0.98, 0.72, 0.07] },
+  { name:'Two Moons + Bridge', type:'II', cls:'t-ii',
+    vals:[0.19, 0.97, 0.96, 0.94, 0.88] },
+  { name:'Annulus + Interior', type:'III', cls:'t-iii',
+    vals:[0.93, 1.00, 0.88, 1.00, 0.52] },
+  { name:'Correlated Gaussian', type:'IV', cls:'t-iv',
+    vals:[0.84, 0.72, 0.73, 0.68, 0.91] },
+  { name:'Swiss Roll + Surface', type:'mix', cls:'t-mix',
+    vals:[0.78, 0.91, 0.85, 0.89, 0.74] },
+];
+
+let sortCol = -1, sortAsc = false;
+
+function aurColor(v) {
+  if (v >= 0.95) return 'rgba(42,157,143,0.18)';
+  if (v >= 0.85) return 'rgba(42,157,143,0.10)';
+  if (v >= 0.70) return 'rgba(233,168,32,0.10)';
+  if (v >= 0.50) return 'rgba(233,168,32,0.18)';
+  return 'rgba(214,64,69,0.15)';
+}
+
+function render(data) {
+  const tb = document.getElementById('tbody');
+  tb.innerHTML = '';
+  data.forEach(row => {
+    const best = Math.max(...row.vals);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${row.name} <span class="type-tag ${row.cls}">${row.type}</span></td>` +
+      row.vals.map((v,i) =>
+        `<td style="position:relative">` +
+        `<div class="cell-bg" style="background:${aurColor(v)}"></div>` +
+        `<span class="cell-val ${v===best?'best':''}">${v.toFixed(2)}</span></td>`
+      ).join('');
+    tb.appendChild(tr);
+  });
+}
+
+function sortBy(col) {
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.sort-arrow').forEach(a => a.classList.remove('active'));
+
+  if (col === 0) {
+    sortCol = -1;
+    render(rows);
+    document.querySelectorAll('.sort-btn').forEach(b => {
+      if (b.textContent === 'Original') b.classList.add('active');
+    });
+    return;
+  }
+
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = false; }
+
+  const el = document.getElementById('s'+col);
+  if (el) { el.classList.add('active'); el.textContent = sortAsc ? '▲' : '▼'; }
+
+  const sorted = [...rows].sort((a,b) =>
+    sortAsc ? a.vals[col-1] - b.vals[col-1] : b.vals[col-1] - a.vals[col-1]
+  );
+  render(sorted);
+}
+
+render(rows);
+</script>
+</body>
+</html>

@@ -51,7 +51,18 @@ ninja.data = [{
               handler: () => {
                 window.location.href = "https://gram-blogposts.github.io/2024/";
               },
-            },{id: "post-jacobi-fields-in-machine-learning",
+            },{id: "post-when-the-k-nn-metric-breaks-a-geometric-phase-transition-in-local-density-estimation",
+        
+          title: "When the k-NN Metric Breaks: A Geometric Phase Transition in Local Density Estimation...",
+        
+        description: "LOF operates on the k-NN graph metric — a non-Euclidean structure that breaks under contamination. We show LOF undergoes a sharp phase transition at c*≈k/n: below it, near-perfect detection; above it, blindness (sigmoid fit, R²=0.80). DTM, a geometric prior measuring manifold distance, resists. Persistent homology provides topological diagnosis but rarely justifies its O(n³) cost. Verified across 22 datasets with interactive tools.",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/2026/blog/2026/topology-tabular-anomalies/";
+          
+        },
+      },{id: "post-jacobi-fields-in-machine-learning",
         
           title: "Jacobi Fields in Machine Learning",
         
