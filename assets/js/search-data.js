@@ -51,48 +51,15 @@ ninja.data = [{
               handler: () => {
                 window.location.href = "https://gram-blogposts.github.io/2024/";
               },
-            },{id: "post-the-role-of-directionality-in-graph-neural-networks",
+            },{id: "post-jacobi-fields-in-machine-learning",
         
-          title: "The Role of Directionality in Graph Neural Networks",
+          title: "Jacobi Fields in Machine Learning",
         
-        description: "We investigate how graph directionality may influence GNN performance across homophilic and heterophilic benchmarks, suggesting it could be an underexplored factor.",
+        description: "Jacobi fields are a concept from differential geometry that describe how neighboring geodesics on a curved manifold deviate from one another. This post provides an intuitive introduction to Jacobi fields and illustrates their usefulness for machine learning on Riemannian manifolds, including an approximation result connecting tangent-space quantities to geodesic distances.",
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/2026/blog/2026/graph_directionality_matters/";
-          
-        },
-      },{id: "post-crystalite-a-lightweight-transformer-for-efficient-crystal-modeling",
-        
-          title: "Crystalite: A Lightweight Transformer for Efficient Crystal Modeling",
-        
-        description: "Crystalite is a lightweight diffusion Transformer for crystal generation and crystal structure prediction. This post covers its chemistry-aware atom encoding, geometry-aware attention mechanism, and benchmark results.",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/2026/blog/2026/crystalite/";
-          
-        },
-      },{id: "post-blowup-and-blowdown-in-deep-learning-tracking-symmetry-breaking-with-algebraic-geometry",
-        
-          title: "Blowup and Blowdown in Deep Learning: Tracking Symmetry Breaking with Algebraic Geometry",
-        
-        description: "We propose algebraic-geometric indicators to track how deep networks simultaneously expand representation dimension (blowup) and break input symmetries (blowdown) during training. We prove an orbit-averaged orthogonality theorem valid for arbitrary nonlinear networks and verify experimentally that generalization gap scales as the square root of effective dimension over sample size with symmetry breaking following a greedy information-theoretic order.",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/2026/blog/2026/algebraic-geometry-deep-learning-dynamics/";
-          
-        },
-      },{id: "post-symmetry-increase-and-equivariant-feature-selection",
-        
-          title: "Symmetry Increase and Equivariant Feature Selection",
-        
-        description: "This blog shows that symmetric inputs can induce representation degeneration due to the algebraic structure of the feature space itself, leading to loss of discriminative power, and provides practical guidance for selecting equivariant features.",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/2026/blog/2026/Symmetry-Increase-and-Equivariant-Feature-Selection/";
+            window.location.href = "/2026/blog/2026/jacobi-fields-ml/";
           
         },
       },{id: "post-fewer-edges-faster-protein-graph-learning",
@@ -104,6 +71,28 @@ ninja.data = [{
         handler: () => {
           
             window.location.href = "/2026/blog/2026/fewer-edges/";
+          
+        },
+      },{id: "post-when-the-k-nn-metric-breaks-a-geometric-phase-transition-in-local-density-estimation",
+        
+          title: "When the k-NN Metric Breaks: A Geometric Phase Transition in Local Density Estimation...",
+        
+        description: "LOF operates on the k-NN graph metric — a non-Euclidean structure that breaks under contamination. We show LOF undergoes a sharp phase transition at c*≈k/n: below it, near-perfect detection; above it, blindness (sigmoid fit, R²=0.80). DTM, a geometric prior measuring manifold distance, resists. Persistent homology provides topological diagnosis but rarely justifies its O(n³) cost. Verified across 22 datasets with interactive tools.",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/2026/blog/2026/topology-tabular-anomalies/";
+          
+        },
+      },{id: "post-crystalite-a-lightweight-transformer-for-efficient-crystal-modeling",
+        
+          title: "Crystalite: A Lightweight Transformer for Efficient Crystal Modeling",
+        
+        description: "Crystalite is a lightweight diffusion Transformer for crystal generation and crystal structure prediction. This post covers its chemistry-aware atom encoding, geometry-aware attention mechanism, and benchmark results.",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/2026/blog/2026/crystalite/";
           
         },
       },{id: "post-to-augment-or-not-to-augment-diagnosing-distributional-symmetry-breaking",
@@ -128,15 +117,15 @@ ninja.data = [{
             window.location.href = "/2026/blog/2026/4-Dimensional-Objects-as-a-Tool-to-Study-Symmetry-Learning-in-Humans-and-Machines/";
           
         },
-      },{id: "post-when-the-k-nn-metric-breaks-a-geometric-phase-transition-in-local-density-estimation",
+      },{id: "post-blowup-and-blowdown-in-deep-learning-tracking-symmetry-breaking-with-algebraic-geometry",
         
-          title: "When the k-NN Metric Breaks: A Geometric Phase Transition in Local Density Estimation...",
+          title: "Blowup and Blowdown in Deep Learning: Tracking Symmetry Breaking with Algebraic Geometry",
         
-        description: "LOF operates on the k-NN graph metric — a non-Euclidean structure that breaks under contamination. We show LOF undergoes a sharp phase transition at c*≈k/n: below it, near-perfect detection; above it, blindness (sigmoid fit, R²=0.80). DTM, a geometric prior measuring manifold distance, resists. Persistent homology provides topological diagnosis but rarely justifies its O(n³) cost. Verified across 22 datasets with interactive tools.",
+        description: "We propose algebraic-geometric indicators to track how deep networks simultaneously expand representation dimension (blowup) and break input symmetries (blowdown) during training. We prove an orbit-averaged orthogonality theorem valid for arbitrary nonlinear networks and verify experimentally that generalization gap scales as the square root of effective dimension over sample size with symmetry breaking following a greedy information-theoretic order.",
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/2026/blog/2026/topology-tabular-anomalies/";
+            window.location.href = "/2026/blog/2026/algebraic-geometry-deep-learning-dynamics/";
           
         },
       },{id: "post-topos-topological-optimal-transport-partitioned-operator-solver",
@@ -150,17 +139,6 @@ ninja.data = [{
             window.location.href = "/2026/blog/2026/topos/";
           
         },
-      },{id: "post-jacobi-fields-in-machine-learning",
-        
-          title: "Jacobi Fields in Machine Learning",
-        
-        description: "Jacobi fields are a concept from differential geometry that describe how neighboring geodesics on a curved manifold deviate from one another. This post provides an intuitive introduction to Jacobi fields and illustrates their usefulness for machine learning on Riemannian manifolds, including an approximation result connecting tangent-space quantities to geodesic distances.",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/2026/blog/2026/jacobi-fields-ml/";
-          
-        },
       },{id: "post-graph-mamba-rethinking-graph-learning",
         
           title: "Graph Mamba - Rethinking Graph Learning",
@@ -170,6 +148,28 @@ ninja.data = [{
         handler: () => {
           
             window.location.href = "/2026/blog/2026/graph-mamba/";
+          
+        },
+      },{id: "post-symmetry-increase-and-equivariant-feature-selection",
+        
+          title: "Symmetry Increase and Equivariant Feature Selection",
+        
+        description: "This blog shows that symmetric inputs can induce representation degeneration due to the algebraic structure of the feature space itself, leading to loss of discriminative power, and provides practical guidance for selecting equivariant features.",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/2026/blog/2026/Symmetry-Increase-and-Equivariant-Feature-Selection/";
+          
+        },
+      },{id: "post-the-role-of-directionality-in-graph-neural-networks",
+        
+          title: "The Role of Directionality in Graph Neural Networks",
+        
+        description: "We investigate how graph directionality may influence GNN performance across homophilic and heterophilic benchmarks, suggesting it could be an underexplored factor.",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/2026/blog/2026/graph_directionality_matters/";
           
         },
       },{id: "post-sample-blog-post",
