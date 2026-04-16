@@ -62,6 +62,17 @@ ninja.data = [{
             window.location.href = "/2026/blog/2026/jacobi-fields-ml/";
           
         },
+      },{id: "post-graph-mamba-rethinking-graph-learning",
+        
+          title: "Graph Mamba - Rethinking Graph Learning",
+        
+        description: "Graph Mamba replaces message passing by turning local subgraphs into token sequences processed by selective state space models. We explain the idea with an interactive Cora demo and a minimal reference implementation.",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/2026/blog/2026/graph-mamba/";
+          
+        },
       },{id: "post-sample-blog-post",
         
           title: "Sample Blog Post",
