@@ -62,6 +62,17 @@ ninja.data = [{
             window.location.href = "/2026/blog/2026/algebraic-geometry-deep-learning-dynamics/";
           
         },
+      },{id: "post-symmetry-increase-and-equivariant-feature-selection",
+        
+          title: "Symmetry Increase and Equivariant Feature Selection",
+        
+        description: "This blog shows that symmetric inputs can induce representation degeneration due to the algebraic structure of the feature space itself, leading to loss of discriminative power, and provides practical guidance for selecting equivariant features.",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/2026/blog/2026/Symmetry-Increase-and-Equivariant-Feature-Selection/";
+          
+        },
       },{id: "post-4-dimensional-objects-as-a-tool-to-study-symmetry-learning-in-humans-and-machines",
         
           title: "4-Dimensional Objects as a Tool to Study Symmetry Learning in Humans and Machines...",
