@@ -62,6 +62,17 @@ ninja.data = [{
             window.location.href = "/2026/blog/2026/algebraic-geometry-deep-learning-dynamics/";
           
         },
+      },{id: "post-4-dimensional-objects-as-a-tool-to-study-symmetry-learning-in-humans-and-machines",
+        
+          title: "4-Dimensional Objects as a Tool to Study Symmetry Learning in Humans and Machines...",
+        
+        description: "We propose four-dimensional Shepard-Metzler shapes as a tool to study symmetry learning in humans and machines.",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/2026/blog/2026/4-Dimensional-Objects-as-a-Tool-to-Study-Symmetry-Learning-in-Humans-and-Machines/";
+          
+        },
       },{id: "post-when-the-k-nn-metric-breaks-a-geometric-phase-transition-in-local-density-estimation",
         
           title: "When the k-NN Metric Breaks: A Geometric Phase Transition in Local Density Estimation...",
