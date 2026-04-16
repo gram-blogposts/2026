@@ -1,0 +1,2310 @@
+<!doctype html>
+<html lang="en" class="embed-mode">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Periodic Table for Subatomic Tokenization</title>
+  <meta name="description" content="Interactive periodic table illustrating the chemistry-aware token features used in Crystalite.">
+  <style>
+:root {
+  --bg: #eef2f7;
+  --bg-accent: #f7f9fc;
+  --surface: rgba(255, 255, 255, 0.9);
+  --surface-strong: #ffffff;
+  --text: #0f172a;
+  --muted: #526277;
+  --subtle: #71839b;
+  --border: rgba(15, 23, 42, 0.08);
+  --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+  --shadow-soft: 0 14px 30px rgba(15, 23, 42, 0.06);
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --tile-size: clamp(48px, 3.2vw, 62px);
+  --tile-gap: 0.38rem;
+  --focus: #0f172a;
+
+  --cat-alkali-metal: #d8eef2;
+  --cat-alkaline-earth-metal: #f6dbdf;
+  --cat-transition-metal: #e6ddfb;
+  --cat-post-transition-metal: #dfe9dd;
+  --cat-metalloid: #efe3bf;
+  --cat-nonmetal: #dfe9fb;
+  --cat-halogen: #d9e3fb;
+  --cat-noble-gas: #f7dde8;
+  --cat-lanthanide: #dce4ed;
+  --cat-actinide: #f7e0d3;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.8) 0%, transparent 28%),
+    linear-gradient(180deg, #f5f7fb 0%, #edf2f8 100%);
+}
+
+html.embed-mode body {
+  min-height: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+html.embed-mode {
+  --embed-scale: 0.75;
+  --radius-xl: 22px;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --tile-gap: 1px;
+  --tile-size: clamp(16px, calc((100vw - 3.75rem) / 18), 34px);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.page-shell {
+  width: min(1600px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 1.25rem 0 2rem;
+}
+
+html.embed-mode .page-shell {
+  width: 100%;
+  padding: clamp(0.55rem, 1.25vw, 0.9rem) clamp(0.6rem, 1.35vw, 0.95rem);
+  transform: scale(var(--embed-scale));
+  transform-origin: top center;
+}
+
+html.embed-mode .demo-nav {
+  display: none;
+}
+
+html.embed-mode .header-copy {
+  display: none;
+}
+
+html.embed-mode .page-header {
+  grid-template-columns: 1fr;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+}
+
+.page-header {
+  display: grid;
+  gap: 1rem;
+  align-items: end;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-bottom: 1rem;
+}
+
+.header-copy h1 {
+  margin: 0.25rem 0 0;
+  font-size: clamp(2rem, 2.4vw, 3rem);
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+}
+
+.subtitle,
+.table-instruction,
+.detail-category,
+.atom-note,
+#detailBlurb,
+.subtle {
+  color: var(--muted);
+}
+
+.subtitle {
+  max-width: 62rem;
+  margin: 0.8rem 0 0;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--subtle);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.toolbar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
+html.embed-mode .toolbar {
+  gap: 0.45rem;
+}
+
+.search-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: min(100%, 28rem);
+  min-width: 0;
+  flex: 0 1 28rem;
+  padding: 0.9rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow-soft);
+}
+
+html.embed-mode .search-field {
+  width: min(100%, 22rem);
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 0.68rem 0.8rem;
+}
+
+.search-field:focus-within {
+  outline: 2px solid rgba(15, 23, 42, 0.18);
+  outline-offset: 2px;
+}
+
+.search-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: var(--subtle);
+  flex: none;
+}
+
+.search-field input {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  width: 100%;
+  outline: none;
+}
+
+.ghost-button {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.85rem 1rem;
+  flex: none;
+  white-space: nowrap;
+  box-shadow: var(--shadow-soft);
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+html.embed-mode .ghost-button {
+  padding: 0.68rem 0.8rem;
+  font-size: 0.82rem;
+}
+
+.ghost-button:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 410px);
+  gap: 1rem;
+  align-items: start;
+}
+
+html.embed-mode .workspace {
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+}
+
+.table-card,
+.detail-card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.table-card {
+  border-radius: var(--radius-xl);
+  padding: 1rem;
+}
+
+html.embed-mode .table-card {
+  padding: 0.28rem;
+}
+
+.detail-card {
+  position: sticky;
+  top: 1rem;
+  border-radius: var(--radius-xl);
+  padding: 1.15rem;
+  overflow: hidden;
+}
+
+html.embed-mode .detail-card {
+  position: static;
+  display: grid;
+  grid-template-columns: minmax(124px, 164px) minmax(108px, 136px) minmax(0, 1fr);
+  grid-template-areas:
+    "header header header"
+    "atom stats config";
+  gap: 0.32rem;
+  align-items: start;
+  padding: 0.52rem;
+}
+
+.detail-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+  background: var(--accent-color, rgba(15, 23, 42, 0.18));
+}
+
+.section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+html.embed-mode .section-heading,
+html.embed-mode .section-heading.compact {
+  gap: 0.4rem;
+  margin-bottom: 0.45rem;
+}
+
+.section-heading h2,
+.section-heading h3 {
+  margin: 0.18rem 0 0;
+  letter-spacing: -0.03em;
+}
+
+.section-heading.compact {
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.section-heading.compact h3 {
+  font-size: 1.1rem;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+html.embed-mode .legend {
+  gap: 0.28rem;
+  margin-bottom: 0.45rem;
+}
+
+.legend-chip {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.52rem 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+}
+
+html.embed-mode .legend-chip {
+  padding: 0.32rem 0.48rem;
+  gap: 0.28rem;
+  font-size: 0.72rem;
+}
+
+.legend-chip::before,
+.detail-category::before {
+  content: "";
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 999px;
+  background: var(--accent-color, #94a3b8);
+  display: inline-block;
+  flex: none;
+}
+
+.legend-chip:hover {
+  transform: translateY(-1px);
+}
+
+.legend-chip.is-active {
+  border-color: rgba(15, 23, 42, 0.22);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+}
+
+.table-scroll {
+  position: relative;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+}
+
+html.embed-mode .table-scroll {
+  overflow: visible;
+  padding-bottom: 0;
+}
+
+.periodic-grid {
+  display: grid;
+  grid-template-columns: repeat(18, var(--tile-size));
+  grid-template-rows: repeat(10, var(--tile-size));
+  gap: var(--tile-gap);
+  min-width: fit-content;
+  position: relative;
+}
+
+html.embed-mode .periodic-grid {
+  min-width: 0;
+  width: 100%;
+  margin-inline: 0;
+}
+
+.series-label {
+  align-self: center;
+  justify-self: stretch;
+  height: calc(var(--tile-size) - 6px);
+  border-radius: var(--radius-sm);
+  border: 1px dashed rgba(15, 23, 42, 0.12);
+  color: var(--subtle);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.08rem;
+  padding: 0.2rem 0.55rem;
+  background: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+
+html.embed-mode .series-label {
+  height: calc(var(--tile-size) - 2px);
+  gap: 0;
+  padding: 0.08rem 0.12rem;
+}
+
+.series-label strong {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+html.embed-mode .series-label strong {
+  font-size: 0.42rem;
+  line-height: 1.1;
+}
+
+.series-label span {
+  font-size: 0.68rem;
+}
+
+html.embed-mode .series-label span {
+  display: none;
+}
+
+.element-card {
+  border: 0;
+  border-radius: 14px;
+  padding: 0.32rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: left;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    opacity 180ms ease,
+    filter 180ms ease,
+    outline-color 180ms ease;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04);
+  color: rgba(15, 23, 42, 0.72);
+  font-family: "Google Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html.embed-mode .element-card {
+  border-radius: 7px;
+  padding: 0.08rem;
+}
+
+.element-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 18px rgba(15, 23, 42, 0.10),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.46);
+}
+
+.element-card:focus-visible,
+.legend-chip:focus-visible,
+.ghost-button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.element-card.is-selected {
+  transform: translateY(-1px);
+  box-shadow:
+    0 12px 24px rgba(15, 23, 42, 0.12),
+    inset 0 0 0 2px rgba(15, 23, 42, 0.65),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.5);
+  color: rgba(15, 23, 42, 0.95);
+}
+
+.element-card.is-dimmed {
+  opacity: 0.22;
+  filter: saturate(0.45);
+}
+
+.element-number {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+html.embed-mode .element-number {
+  font-size: clamp(0.38rem, 0.95vw, 0.6rem);
+}
+
+.element-symbol {
+  display: block;
+  font-size: clamp(1.18rem, 1.25vw + 0.6rem, 1.72rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-top: auto;
+}
+
+html.embed-mode .element-symbol {
+  font-size: clamp(0.74rem, 1.7vw, 1.12rem);
+}
+
+.element-name {
+  display: block;
+  font-size: 0.66rem;
+  line-height: 1.12;
+  margin-top: 0.18rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.embed-mode .element-name {
+  display: none;
+}
+
+.cat-alkali-metal { background: var(--cat-alkali-metal); --accent-color: #85c7d4; }
+.cat-alkaline-earth-metal { background: var(--cat-alkaline-earth-metal); --accent-color: #ec9cac; }
+.cat-transition-metal { background: var(--cat-transition-metal); --accent-color: #9b86e7; }
+.cat-post-transition-metal { background: var(--cat-post-transition-metal); --accent-color: #9bb783; }
+.cat-metalloid { background: var(--cat-metalloid); --accent-color: #d1b267; }
+.cat-nonmetal { background: var(--cat-nonmetal); --accent-color: #8da8eb; }
+.cat-halogen { background: var(--cat-halogen); --accent-color: #8196e0; }
+.cat-noble-gas { background: var(--cat-noble-gas); --accent-color: #eca0c5; }
+.cat-lanthanide { background: var(--cat-lanthanide); --accent-color: #8aa1b8; }
+.cat-actinide { background: var(--cat-actinide); --accent-color: #d89b7c; }
+
+.detail-header {
+  margin-bottom: 0.9rem;
+}
+
+html.embed-mode .detail-header {
+  grid-area: header;
+  margin-bottom: 0.3rem;
+}
+
+.detail-kicker {
+  margin: 0;
+  color: var(--subtle);
+  font-size: 0.84rem;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+}
+
+.detail-title {
+  margin: 0.45rem 0 0;
+  font-size: clamp(1.9rem, 2vw, 2.6rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+html.embed-mode .detail-title {
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
+}
+
+.detail-category {
+  margin: 0.8rem 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+html.embed-mode .detail-kicker,
+html.embed-mode .detail-category {
+  display: none;
+}
+
+.atom-panel,
+.info-block,
+.stats-grid {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.68);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+}
+
+html.embed-mode .atom-panel,
+html.embed-mode .info-block,
+html.embed-mode .stats-grid {
+  padding: 0.62rem;
+}
+
+.atom-panel {
+  margin-bottom: 0.9rem;
+}
+
+html.embed-mode .atom-panel {
+  grid-area: atom;
+  margin-bottom: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html.embed-mode .atom-panel .section-heading {
+  display: none;
+}
+
+.atom-canvas-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-height: 250px;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.98), rgba(239, 245, 252, 0.92) 45%, rgba(227, 235, 245, 0.9) 100%);
+}
+
+html.embed-mode .atom-canvas-wrap {
+  min-height: 132px;
+  max-width: 172px;
+  margin-inline: auto;
+}
+
+#atomCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.9rem;
+}
+
+html.embed-mode .stats-grid {
+  grid-area: stats;
+  align-self: start;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(4, auto);
+  gap: 0.2rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.stat-card {
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.78rem 0.8rem;
+  min-height: 74px;
+}
+
+html.embed-mode .stat-card {
+  width: 100%;
+  min-height: 0;
+  padding: 0.28rem 0.38rem;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+}
+
+.stat-label {
+  display: block;
+  color: var(--subtle);
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.stat-value {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+html.embed-mode .stat-label {
+  font-size: 0.52rem;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+html.embed-mode .stat-value {
+  margin-top: 0;
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.info-block {
+  margin-bottom: 0.9rem;
+}
+
+html.embed-mode .info-block[aria-labelledby="configHeading"] {
+  grid-area: config;
+  align-self: start;
+  padding: 0.4rem 0.48rem;
+  margin-bottom: 0;
+}
+
+html.embed-mode .info-block[aria-labelledby="configHeading"] .info-block-heading {
+  margin-bottom: 0.22rem;
+}
+
+html.embed-mode .info-block[aria-labelledby="configHeading"] h3 {
+  margin-bottom: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+}
+
+html.embed-mode .info-block[aria-labelledby="configHeading"] .mono {
+  font-size: 0.76rem;
+  line-height: 1.24;
+}
+
+html.embed-mode .info-block[aria-labelledby="notesHeading"] {
+  display: none;
+}
+
+.info-block:last-child {
+  margin-bottom: 0;
+}
+
+.info-block h3 {
+  margin: 0 0 0.65rem;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.info-block-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+
+.info-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.38rem 0.65rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  color: var(--muted);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.mono {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.93rem;
+  line-height: 1.55;
+  color: #122031;
+  overflow-wrap: anywhere;
+}
+
+html.embed-mode .mono {
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+html.embed-mode #detailConfigFull,
+html.embed-mode #outerElectronPill,
+html.embed-mode #shellChips {
+  display: none;
+}
+
+.mono.subtle {
+  margin-top: 0.4rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.shell-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+}
+
+html.embed-mode .shell-chips {
+  gap: 0.28rem;
+  margin-top: 0.45rem;
+}
+
+.shell-chip {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  padding: 0.42rem 0.64rem;
+  color: var(--text);
+  font-size: 0.82rem;
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+html.embed-mode .shell-chip {
+  padding: 0.24rem 0.38rem;
+  font-size: 0.72rem;
+}
+
+.shell-chip strong {
+  font-size: 0.74rem;
+  color: var(--subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.subatomic-reps {
+  --subatomic-accent: #2f6b6c;
+  --subatomic-accent-soft: #88a6a6;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+html.embed-mode .subatomic-reps {
+  gap: 0.28rem;
+  margin-top: 0.3rem;
+}
+
+.subatomic-card {
+  min-width: 0;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.72rem 0.78rem;
+}
+
+html.embed-mode .subatomic-card {
+  border-radius: 10px;
+  padding: 0.32rem 0.36rem;
+}
+
+.subatomic-heading {
+  margin: 0 0 0.65rem;
+  color: var(--subtle);
+  font-size: 0.72rem;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+html.embed-mode .subatomic-heading {
+  margin-bottom: 0.24rem;
+  font-size: 0.58rem;
+}
+
+.subatomic-bars {
+  display: grid;
+  gap: 0.52rem;
+}
+
+html.embed-mode .subatomic-bars {
+  gap: 0.26rem;
+}
+
+.subatomic-bar-row {
+  display: grid;
+  grid-template-columns: 0.8rem minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+html.embed-mode .subatomic-bar-row {
+  grid-template-columns: 0.72rem minmax(0, 1fr) auto;
+  gap: 0.4rem;
+}
+
+.subatomic-bar-label {
+  color: var(--text);
+  font-family: "Google Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: lowercase;
+}
+
+html.embed-mode .subatomic-bar-label {
+  font-size: 0.74rem;
+}
+
+.subatomic-bar-track {
+  position: relative;
+  height: 0.58rem;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  background: rgba(234, 229, 217, 0.74);
+}
+
+html.embed-mode .subatomic-bar-track {
+  height: 0.42rem;
+}
+
+.subatomic-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--subatomic-accent);
+}
+
+.subatomic-bar-count {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+html.embed-mode .subatomic-bar-count {
+  font-size: 0.64rem;
+}
+
+.pca-signature {
+  min-width: 0;
+}
+
+.pca-signature-frame {
+  display: grid;
+  gap: 0.35rem;
+}
+
+html.embed-mode .pca-signature-frame {
+  gap: 0.22rem;
+}
+
+.pca-signature-plot {
+  position: relative;
+  height: 6.8rem;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  background: rgba(234, 229, 217, 0.74);
+  padding: 0.45rem 0.22rem 0.3rem;
+}
+
+html.embed-mode .pca-signature-plot {
+  height: 4.05rem;
+  border-radius: 10px;
+  padding: 0.24rem 0.12rem 0.18rem;
+}
+
+.pca-signature-baseline {
+  position: absolute;
+  left: 0.35rem;
+  right: 0.35rem;
+  top: 50%;
+  border-top: 1px solid rgba(15, 23, 42, 0.14);
+  z-index: 0;
+}
+
+html.embed-mode .pca-signature-baseline {
+  left: 0.28rem;
+  right: 0.28rem;
+}
+
+.pca-signature-guide {
+  position: absolute;
+  top: 0.55rem;
+  bottom: 0.5rem;
+  width: 1px;
+  background: rgba(15, 23, 42, 0.07);
+  z-index: 0;
+}
+
+html.embed-mode .pca-signature-guide {
+  top: 0.3rem;
+  bottom: 0.28rem;
+}
+
+.pca-signature-bars {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 0.14rem;
+  height: 100%;
+  align-items: stretch;
+}
+
+html.embed-mode .pca-signature-bars {
+  gap: 0.08rem;
+}
+
+.pca-signature-slot {
+  position: relative;
+}
+
+.pca-signature-bar {
+  position: absolute;
+  left: 18%;
+  width: 64%;
+  border-radius: 999px;
+}
+
+.pca-signature-bar.is-positive {
+  bottom: 50%;
+  background: var(--subatomic-accent);
+}
+
+.pca-signature-bar.is-negative {
+  top: 50%;
+  background: var(--subatomic-accent-soft);
+}
+
+.pca-signature-ticks {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  color: var(--subtle);
+  font-size: 0.66rem;
+  line-height: 1;
+}
+
+html.embed-mode .pca-signature-ticks {
+  font-size: 0.54rem;
+}
+
+.pca-signature-ticks span {
+  justify-self: center;
+}
+
+.pca-signature-ticks span.is-start {
+  justify-self: start;
+}
+
+.pca-signature-ticks span.is-end {
+  justify-self: end;
+}
+
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 2rem;
+  color: var(--muted);
+  background: rgba(245, 248, 252, 0.78);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(8px);
+}
+
+.hidden {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 1200px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-card {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .page-shell {
+    width: min(100%, calc(100% - 1rem));
+    padding-top: 0.75rem;
+  }
+
+  html.embed-mode .page-shell {
+    width: 100%;
+    padding: 0.6rem;
+  }
+
+  html.embed-mode {
+    --embed-scale: 0.9;
+    --tile-size: clamp(14px, calc((100vw - 2.9rem) / 18), 28px);
+  }
+
+  html.embed-mode .detail-card {
+    grid-template-columns: minmax(96px, 122px) minmax(0, 1fr);
+    grid-template-areas:
+      "header header"
+      "atom stats"
+      "config config";
+    gap: 0.34rem;
+    padding: 0.5rem;
+  }
+
+  .page-header {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+
+  .search-field {
+    width: 100%;
+    min-width: 100%;
+    flex-basis: 100%;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .subatomic-reps {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-card,
+  .table-card {
+    padding: 0.9rem;
+  }
+
+  .section-heading,
+  .section-heading.compact {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .table-instruction {
+    margin: 0;
+  }
+}
+
+</style>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="page-header">
+
+      <div class="toolbar" role="search">
+        <label class="search-field" for="elementSearch">
+          <span class="visually-hidden">Search elements</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="search-icon">
+            <path d="M10.5 4a6.5 6.5 0 1 1 0 13a6.5 6.5 0 0 1 0-13Zm0 1.8a4.7 4.7 0 1 0 0 9.4a4.7 4.7 0 0 0 0-9.4Zm8.87 11.6l2.63 2.64l-1.27 1.27l-2.64-2.63l1.28-1.28Z"></path>
+          </svg>
+          <input id="elementSearch" type="search" placeholder="Search by name, symbol, or atomic number" autocomplete="off">
+        </label>
+        <button id="clearFilters" class="ghost-button" type="button">Clear filters</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="table-card" aria-labelledby="tableHeading">
+        <div class="section-heading">
+          <div>
+            <h2 id="tableHeading">Periodic table</h2>
+          </div>
+        </div>
+
+        <div class="legend" id="categoryLegend" aria-label="Element categories"></div>
+
+        <div class="table-scroll">
+          <div class="periodic-grid" id="periodicGrid" aria-label="Interactive periodic table"></div>
+          <div class="empty-state hidden" id="tableEmptyState">
+            No elements match the current search or category filter.
+          </div>
+        </div>
+      </section>
+
+      <aside class="detail-card cat-metalloid" id="detailCard" aria-live="polite">
+        <div class="detail-header">
+          <p class="detail-kicker" id="detailKicker">Atomic number 32</p>
+          <h2 class="detail-title" id="detailTitle">Germanium (Ge)</h2>
+          <p class="detail-category" id="detailCategory">Metalloid • Solid • p-block</p>
+        </div>
+
+        <section class="atom-panel" aria-labelledby="atomHeading">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Embedded view</p>
+              <h3 id="atomHeading">Electronic structure</h3>
+            </div>
+            <p class="atom-note">Bohr-style representation</p>
+          </div>
+          <div class="atom-canvas-wrap" id="atomCanvasWrap">
+            <canvas id="atomCanvas" aria-label="Animated shell visualization"></canvas>
+          </div>
+        </section>
+
+        <section class="stats-grid" id="statsGrid" aria-label="Element statistics"></section>
+
+        <section class="info-block" aria-labelledby="configHeading">
+          <div class="info-block-heading">
+            <h3 id="configHeading">Electron configuration</h3>
+            <span class="info-pill" id="outerElectronPill">4 outer electrons</span>
+          </div>
+          <p class="mono" id="detailConfigShort">[Ar] 3d10 4s2 4p2</p>
+          <p class="mono subtle" id="detailConfigFull">1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p2</p>
+          <div class="subatomic-reps" id="subatomicReps" aria-label="Subatomic representations">
+            <section class="subatomic-card" aria-labelledby="valenceBarsHeading">
+              <h4 class="subatomic-heading" id="valenceBarsHeading">Ground-state valence occupancy</h4>
+              <div class="subatomic-bars" id="valenceBars"></div>
+            </section>
+
+            <section class="subatomic-card" aria-labelledby="pcaSignatureHeading">
+              <h4 class="subatomic-heading" id="pcaSignatureHeading">PCA24 signature</h4>
+              <div class="pca-signature" id="pcaSignature"></div>
+            </section>
+          </div>
+          <div class="shell-chips" id="shellChips"></div>
+        </section>
+
+        <section class="info-block" aria-labelledby="notesHeading">
+          <h3 id="notesHeading">Sidebar copy</h3>
+          <p id="detailBlurb">
+            Germanium sits in period 4, group 14, and the p-block. Its shell distribution is 2 • 8 • 18 • 4, giving it 4 electrons in the outermost shell. This compact view highlights the periodic and electronic-structure features used in Subatomic Tokenization.
+          </p>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+window.PERIODIC_TABLE_DATA = [{"number":1,"symbol":"H","name":"Hydrogen","mass":1.008,"phase":"Gas","category":"diatomic nonmetal","categoryBase":"nonmetal","categoryLabel":"Nonmetal","period":1,"group":1,"block":"s","x":1,"y":1,"shells":[1],"config":"1s1","configShort":"1s1"},{"number":2,"symbol":"He","name":"Helium","mass":4.0026022,"phase":"Gas","category":"noble gas","categoryBase":"noble-gas","categoryLabel":"Noble gas","period":1,"group":18,"block":"s","x":18,"y":1,"shells":[2],"config":"1s2","configShort":"1s2"},{"number":3,"symbol":"Li","name":"Lithium","mass":6.94,"phase":"Solid","category":"alkali metal","categoryBase":"alkali-metal","categoryLabel":"Alkali metal","period":2,"group":1,"block":"s","x":1,"y":2,"shells":[2,1],"config":"1s2 2s1","configShort":"[He] 2s1"},{"number":4,"symbol":"Be","name":"Beryllium","mass":9.01218315,"phase":"Solid","category":"alkaline earth metal","categoryBase":"alkaline-earth-metal","categoryLabel":"Alkaline earth metal","period":2,"group":2,"block":"s","x":2,"y":2,"shells":[2,2],"config":"1s2 2s2","configShort":"[He] 2s2"},{"number":5,"symbol":"B","name":"Boron","mass":10.81,"phase":"Solid","category":"metalloid","categoryBase":"metalloid","categoryLabel":"Metalloid","period":2,"group":13,"block":"p","x":13,"y":2,"shells":[2,3],"config":"1s2 2s2 2p1","configShort":"[He] 2s2 2p1"},{"number":6,"symbol":"C","name":"Carbon","mass":12.011,"phase":"Solid","category":"polyatomic nonmetal","categoryBase":"nonmetal","categoryLabel":"Nonmetal","period":2,"group":14,"block":"p","x":14,"y":2,"shells":[2,4],"config":"1s2 2s2 2p2","configShort":"[He] 2s2 2p2"},{"number":7,"symbol":"N","name":"Nitrogen","mass":14.007,"phase":"Gas","category":"diatomic nonmetal","categoryBase":"nonmetal","categoryLabel":"Nonmetal","period":2,"group":15,"block":"p","x":15,"y":2,"shells":[2,5],"config":"1s2 2s2 2p3","configShort":"[He] 2s2 2p3"},{"number":8,"symbol":"O","name":"Oxygen","mass":15.999,"phase":"Gas","category":"diatomic nonmetal","categoryBase":"nonmetal","categoryLabel":"Nonmetal","period":2,"group":16,"block":"p","x":16,"y":2,"shells":[2,6],"config":"1s2 2s2 2p4","configShort":"[He] 2s2 2p4"},{"number":9,"symbol":"F","name":"Fluorine","mass":18.9984031636,"phase":"Gas","category":"diatomic nonmetal","categoryBase":"nonmetal","categoryLabel":"Nonmetal","period":2,"group":17,"block":"p","x":17,"y":2,"shells":[2,7],"config":"1s2 2s2 2p5","configShort":"[He] 2s2 2p5"},{"number":10,"symbol":"Ne","name":"Neon","mass":20.17976,"phase":"Gas","category":"noble gas","categoryBase":"noble-gas","categoryLabel":"Noble gas","period":2,"group":18,"block":"p","x":18,"y":2,"shells":[2,8],"config":"1s2 2s2 2p6","configShort":"[He] 2s2 2p6"},{"number":11,"symbol":"Na","name":"Sodium","mass":22.989769282,"phase":"Solid","category":"alkali metal","categoryBase":"alkali-metal","categoryLabel":"Alkali metal","period":3,"group":1,"block":"s","x":1,"y":3,"shells":[2,8,1],"config":"1s2 2s2 2p6 3s1","configShort":"[Ne] 3s1"},{"number":12,"symbol":"Mg","name":"Magnesium","mass":24.305,"phase":"Solid","category":"alkaline earth metal","categoryBase":"alkaline-earth-metal","categoryLabel":"Alkaline earth metal","period":3,"group":2,"block":"s","x":2,"y":3,"shells":[2,8,2],"config":"1s2 2s2 2p6 3s2","configShort":"[Ne] 3s2"},{"number":13,"symbol":"Al","name":"Aluminium","mass":26.98153857,"phase":"Solid","category":"post-transition metal","categoryBase":"post-transition-metal","categoryLabel":"Post-transition metal","period":3,"group":13,"block":"p","x":13,"y":3,"shells":[2,8,3],"config":"1s2 2s2 2p6 3s2 3p1","configShort":"[Ne] 3s2 3p1"},{"number":14,"symbol":"Si","name":"Silicon","mass":28.085,"phase":"Solid","category":"metalloid","categoryBase":"metalloid","categoryLabel":"Metalloid","period":3,"group":14,"block":"p","x":14,"y":3,"shells":[2,8,4],"config":"1s2 2s2 2p6 3s2 3p2","configShort":"[Ne] 3s2 3p2"},{"number":15,"symbol":"P","name":"Phosphorus","mass":30.9737619985,"phase":"Solid","category":"polyatomic nonmetal","categoryBase":"nonmetal","categoryLabel":"Nonmetal","period":3,"group":15,"block":"p","x":15,"y":3,"shells":[2,8,5],"config":"1s2 2s2 2p6 3s2 3p3","configShort":"[Ne] 3s2 3p3"},{"number":16,"symbol":"S","name":"Sulfur","mass":32.06,"phase":"Solid","category":"polyatomic nonmetal","categoryBase":"nonmetal","categoryLabel":"Nonmetal","period":3,"group":16,"block":"p","x":16,"y":3,"shells":[2,8,6],"config":"1s2 2s2 2p6 3s2 3p4","configShort":"[Ne] 3s2 3p4"},{"number":17,"symbol":"Cl","name":"Chlorine","mass":35.45,"phase":"Gas","category":"diatomic nonmetal","categoryBase":"nonmetal","categoryLabel":"Nonmetal","period":3,"group":17,"block":"p","x":17,"y":3,"shells":[2,8,7],"config":"1s2 2s2 2p6 3s2 3p5","configShort":"[Ne] 3s2 3p5"},{"number":18,"symbol":"Ar","name":"Argon","mass":39.9481,"phase":"Gas","category":"noble gas","categoryBase":"noble-gas","categoryLabel":"Noble gas","period":3,"group":18,"block":"p","x":18,"y":3,"shells":[2,8,8],"config":"1s2 2s2 2p6 3s2 3p6","configShort":"[Ne] 3s2 3p6"},{"number":19,"symbol":"K","name":"Potassium","mass":39.09831,"phase":"Solid","category":"alkali metal","categoryBase":"alkali-metal","categoryLabel":"Alkali metal","period":4,"group":1,"block":"s","x":1,"y":4,"shells":[2,8,8,1],"config":"1s2 2s2 2p6 3s2 3p6 4s1","configShort":"[Ar] 4s1"},{"number":20,"symbol":"Ca","name":"Calcium","mass":40.0784,"phase":"Solid","category":"alkaline earth metal","categoryBase":"alkaline-earth-metal","categoryLabel":"Alkaline earth metal","period":4,"group":2,"block":"s","x":2,"y":4,"shells":[2,8,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2","configShort":"[Ar] 4s2"},{"number":21,"symbol":"Sc","name":"Scandium","mass":44.9559085,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":4,"group":3,"block":"d","x":3,"y":4,"shells":[2,8,9,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d1","configShort":"[Ar] 3d1 4s2"},{"number":22,"symbol":"Ti","name":"Titanium","mass":47.8671,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":4,"group":4,"block":"d","x":4,"y":4,"shells":[2,8,10,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d2","configShort":"[Ar] 3d2 4s2"},{"number":23,"symbol":"V","name":"Vanadium","mass":50.94151,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":4,"group":5,"block":"d","x":5,"y":4,"shells":[2,8,11,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d3","configShort":"[Ar] 3d3 4s2"},{"number":24,"symbol":"Cr","name":"Chromium","mass":51.99616,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":4,"group":6,"block":"d","x":6,"y":4,"shells":[2,8,13,1],"config":"1s2 2s2 2p6 3s2 3p6 4s1 3d5","configShort":"[Ar] 3d5 4s1"},{"number":25,"symbol":"Mn","name":"Manganese","mass":54.9380443,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":4,"group":7,"block":"d","x":7,"y":4,"shells":[2,8,13,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d5","configShort":"[Ar] 3d5 4s2"},{"number":26,"symbol":"Fe","name":"Iron","mass":55.8452,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":4,"group":8,"block":"d","x":8,"y":4,"shells":[2,8,14,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d6","configShort":"[Ar] 3d6 4s2"},{"number":27,"symbol":"Co","name":"Cobalt","mass":58.9331944,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":4,"group":9,"block":"d","x":9,"y":4,"shells":[2,8,15,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d7","configShort":"[Ar] 3d7 4s2"},{"number":28,"symbol":"Ni","name":"Nickel","mass":58.69344,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":4,"group":10,"block":"d","x":10,"y":4,"shells":[2,8,16,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d8","configShort":"[Ar] 3d8 4s2"},{"number":29,"symbol":"Cu","name":"Copper","mass":63.5463,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":4,"group":11,"block":"d","x":11,"y":4,"shells":[2,8,18,1],"config":"1s2 2s2 2p6 3s2 3p6 4s1 3d10","configShort":"[Ar] 3d10 4s1"},{"number":30,"symbol":"Zn","name":"Zinc","mass":65.382,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":4,"group":12,"block":"d","x":12,"y":4,"shells":[2,8,18,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10","configShort":"[Ar] 3d10 4s2"},{"number":31,"symbol":"Ga","name":"Gallium","mass":69.7231,"phase":"Solid","category":"post-transition metal","categoryBase":"post-transition-metal","categoryLabel":"Post-transition metal","period":4,"group":13,"block":"p","x":13,"y":4,"shells":[2,8,18,3],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p1","configShort":"[Ar] 3d10 4s2 4p1"},{"number":32,"symbol":"Ge","name":"Germanium","mass":72.6308,"phase":"Solid","category":"metalloid","categoryBase":"metalloid","categoryLabel":"Metalloid","period":4,"group":14,"block":"p","x":14,"y":4,"shells":[2,8,18,4],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p2","configShort":"[Ar] 3d10 4s2 4p2"},{"number":33,"symbol":"As","name":"Arsenic","mass":74.9215956,"phase":"Solid","category":"metalloid","categoryBase":"metalloid","categoryLabel":"Metalloid","period":4,"group":15,"block":"p","x":15,"y":4,"shells":[2,8,18,5],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p3","configShort":"[Ar] 3d10 4s2 4p3"},{"number":34,"symbol":"Se","name":"Selenium","mass":78.9718,"phase":"Solid","category":"polyatomic nonmetal","categoryBase":"nonmetal","categoryLabel":"Nonmetal","period":4,"group":16,"block":"p","x":16,"y":4,"shells":[2,8,18,6],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p4","configShort":"[Ar] 3d10 4s2 4p4"},{"number":35,"symbol":"Br","name":"Bromine","mass":79.904,"phase":"Liquid","category":"diatomic nonmetal","categoryBase":"nonmetal","categoryLabel":"Nonmetal","period":4,"group":17,"block":"p","x":17,"y":4,"shells":[2,8,18,7],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p5","configShort":"[Ar] 3d10 4s2 4p5"},{"number":36,"symbol":"Kr","name":"Krypton","mass":83.7982,"phase":"Gas","category":"noble gas","categoryBase":"noble-gas","categoryLabel":"Noble gas","period":4,"group":18,"block":"p","x":18,"y":4,"shells":[2,8,18,8],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6","configShort":"[Ar] 3d10 4s2 4p6"},{"number":37,"symbol":"Rb","name":"Rubidium","mass":85.46783,"phase":"Solid","category":"alkali metal","categoryBase":"alkali-metal","categoryLabel":"Alkali metal","period":5,"group":1,"block":"s","x":1,"y":5,"shells":[2,8,18,8,1],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s1","configShort":"[Kr] 5s1"},{"number":38,"symbol":"Sr","name":"Strontium","mass":87.621,"phase":"Solid","category":"alkaline earth metal","categoryBase":"alkaline-earth-metal","categoryLabel":"Alkaline earth metal","period":5,"group":2,"block":"s","x":2,"y":5,"shells":[2,8,18,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2","configShort":"[Kr] 5s2"},{"number":39,"symbol":"Y","name":"Yttrium","mass":88.905842,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":5,"group":3,"block":"d","x":3,"y":5,"shells":[2,8,18,9,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d1","configShort":"[Kr] 4d1 5s2"},{"number":40,"symbol":"Zr","name":"Zirconium","mass":91.2242,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":5,"group":4,"block":"d","x":4,"y":5,"shells":[2,8,18,10,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d2","configShort":"[Kr] 4d2 5s2"},{"number":41,"symbol":"Nb","name":"Niobium","mass":92.906372,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":5,"group":5,"block":"d","x":5,"y":5,"shells":[2,8,18,12,1],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s1 4d4","configShort":"[Kr] 4d4 5s1"},{"number":42,"symbol":"Mo","name":"Molybdenum","mass":95.951,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":5,"group":6,"block":"d","x":6,"y":5,"shells":[2,8,18,13,1],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s1 4d5","configShort":"[Kr] 4d5 5s1"},{"number":43,"symbol":"Tc","name":"Technetium","mass":98,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":5,"group":7,"block":"d","x":7,"y":5,"shells":[2,8,18,13,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d5","configShort":"[Kr] 4d5 5s2"},{"number":44,"symbol":"Ru","name":"Ruthenium","mass":101.072,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":5,"group":8,"block":"d","x":8,"y":5,"shells":[2,8,18,15,1],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s1 4d7","configShort":"[Kr] 4d7 5s1"},{"number":45,"symbol":"Rh","name":"Rhodium","mass":102.905502,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":5,"group":9,"block":"d","x":9,"y":5,"shells":[2,8,18,16,1],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s1 4d8","configShort":"[Kr] 4d8 5s1"},{"number":46,"symbol":"Pd","name":"Palladium","mass":106.421,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":5,"group":10,"block":"d","x":10,"y":5,"shells":[2,8,18,18],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 4d10","configShort":"[Kr] 4d10"},{"number":47,"symbol":"Ag","name":"Silver","mass":107.86822,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":5,"group":11,"block":"d","x":11,"y":5,"shells":[2,8,18,18,1],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s1 4d10","configShort":"[Kr] 4d10 5s1"},{"number":48,"symbol":"Cd","name":"Cadmium","mass":112.4144,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":5,"group":12,"block":"d","x":12,"y":5,"shells":[2,8,18,18,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10","configShort":"[Kr] 4d10 5s2"},{"number":49,"symbol":"In","name":"Indium","mass":114.8181,"phase":"Solid","category":"post-transition metal","categoryBase":"post-transition-metal","categoryLabel":"Post-transition metal","period":5,"group":13,"block":"p","x":13,"y":5,"shells":[2,8,18,18,3],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p1","configShort":"[Kr] 4d10 5s2 5p1"},{"number":50,"symbol":"Sn","name":"Tin","mass":118.7107,"phase":"Solid","category":"post-transition metal","categoryBase":"post-transition-metal","categoryLabel":"Post-transition metal","period":5,"group":14,"block":"p","x":14,"y":5,"shells":[2,8,18,18,4],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p2","configShort":"[Kr] 4d10 5s2 5p2"},{"number":51,"symbol":"Sb","name":"Antimony","mass":121.7601,"phase":"Solid","category":"metalloid","categoryBase":"metalloid","categoryLabel":"Metalloid","period":5,"group":15,"block":"p","x":15,"y":5,"shells":[2,8,18,18,5],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p3","configShort":"[Kr] 4d10 5s2 5p3"},{"number":52,"symbol":"Te","name":"Tellurium","mass":127.603,"phase":"Solid","category":"metalloid","categoryBase":"metalloid","categoryLabel":"Metalloid","period":5,"group":16,"block":"p","x":16,"y":5,"shells":[2,8,18,18,6],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p4","configShort":"[Kr] 4d10 5s2 5p4"},{"number":53,"symbol":"I","name":"Iodine","mass":126.904473,"phase":"Solid","category":"diatomic nonmetal","categoryBase":"nonmetal","categoryLabel":"Nonmetal","period":5,"group":17,"block":"p","x":17,"y":5,"shells":[2,8,18,18,7],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p5","configShort":"[Kr] 4d10 5s2 5p5"},{"number":54,"symbol":"Xe","name":"Xenon","mass":131.2936,"phase":"Gas","category":"noble gas","categoryBase":"noble-gas","categoryLabel":"Noble gas","period":5,"group":18,"block":"p","x":18,"y":5,"shells":[2,8,18,18,8],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6","configShort":"[Kr] 4d10 5s2 5p6"},{"number":55,"symbol":"Cs","name":"Cesium","mass":132.905451966,"phase":"Solid","category":"alkali metal","categoryBase":"alkali-metal","categoryLabel":"Alkali metal","period":6,"group":1,"block":"s","x":1,"y":6,"shells":[2,8,18,18,8,1],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s1","configShort":"[Xe] 6s1"},{"number":56,"symbol":"Ba","name":"Barium","mass":137.3277,"phase":"Solid","category":"alkaline earth metal","categoryBase":"alkaline-earth-metal","categoryLabel":"Alkaline earth metal","period":6,"group":2,"block":"s","x":2,"y":6,"shells":[2,8,18,18,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2","configShort":"[Xe] 6s2"},{"number":57,"symbol":"La","name":"Lanthanum","mass":138.905477,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"f","x":3,"y":9,"shells":[2,8,18,18,9,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 5d1","configShort":"[Xe] 5d16s2"},{"number":58,"symbol":"Ce","name":"Cerium","mass":140.1161,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"f","x":4,"y":9,"shells":[2,8,18,19,9,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 5d1 4f1","configShort":"[Xe] 4f1 5d1 6s2"},{"number":59,"symbol":"Pr","name":"Praseodymium","mass":140.907662,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"f","x":5,"y":9,"shells":[2,8,18,21,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f3","configShort":"[Xe] 4f3 6s2"},{"number":60,"symbol":"Nd","name":"Neodymium","mass":144.2423,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"f","x":6,"y":9,"shells":[2,8,18,22,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f4","configShort":"[Xe] 4f4 6s2"},{"number":61,"symbol":"Pm","name":"Promethium","mass":145,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"f","x":7,"y":9,"shells":[2,8,18,23,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f5","configShort":"[Xe] 4f5 6s2"},{"number":62,"symbol":"Sm","name":"Samarium","mass":150.362,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"f","x":8,"y":9,"shells":[2,8,18,24,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f6","configShort":"[Xe] 4f6 6s2"},{"number":63,"symbol":"Eu","name":"Europium","mass":151.9641,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"f","x":9,"y":9,"shells":[2,8,18,25,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f7","configShort":"[Xe] 4f7 6s2"},{"number":64,"symbol":"Gd","name":"Gadolinium","mass":157.253,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"f","x":10,"y":9,"shells":[2,8,18,25,9,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f7 5d1","configShort":"[Xe] 4f7 5d1 6s2"},{"number":65,"symbol":"Tb","name":"Terbium","mass":158.925352,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"f","x":11,"y":9,"shells":[2,8,18,27,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f9","configShort":"[Xe] 4f9 6s2"},{"number":66,"symbol":"Dy","name":"Dysprosium","mass":162.5001,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"f","x":12,"y":9,"shells":[2,8,18,28,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f10","configShort":"[Xe] 4f10 6s2"},{"number":67,"symbol":"Ho","name":"Holmium","mass":164.930332,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"f","x":13,"y":9,"shells":[2,8,18,29,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f11","configShort":"[Xe] 4f11 6s2"},{"number":68,"symbol":"Er","name":"Erbium","mass":167.2593,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"f","x":14,"y":9,"shells":[2,8,18,30,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f12","configShort":"[Xe] 4f12 6s2"},{"number":69,"symbol":"Tm","name":"Thulium","mass":168.934222,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"f","x":15,"y":9,"shells":[2,8,18,31,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f13","configShort":"[Xe] 4f13 6s2"},{"number":70,"symbol":"Yb","name":"Ytterbium","mass":173.0451,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"f","x":16,"y":9,"shells":[2,8,18,32,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14","configShort":"[Xe] 4f14 6s2"},{"number":71,"symbol":"Lu","name":"Lutetium","mass":174.96681,"phase":"Solid","category":"lanthanide","categoryBase":"lanthanide","categoryLabel":"Lanthanide","period":6,"group":3,"block":"d","x":17,"y":9,"shells":[2,8,18,32,9,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d1","configShort":"[Xe] 4f14 5d1 6s2"},{"number":72,"symbol":"Hf","name":"Hafnium","mass":178.492,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":6,"group":4,"block":"d","x":4,"y":6,"shells":[2,8,18,32,10,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d2","configShort":"[Xe] 4f14 5d2 6s2"},{"number":73,"symbol":"Ta","name":"Tantalum","mass":180.947882,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":6,"group":5,"block":"d","x":5,"y":6,"shells":[2,8,18,32,11,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d3","configShort":"[Xe] 4f14 5d3 6s2"},{"number":74,"symbol":"W","name":"Tungsten","mass":183.841,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":6,"group":6,"block":"d","x":6,"y":6,"shells":[2,8,18,32,12,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d4","configShort":"[Xe] 4f14 5d4 6s2"},{"number":75,"symbol":"Re","name":"Rhenium","mass":186.2071,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":6,"group":7,"block":"d","x":7,"y":6,"shells":[2,8,18,32,13,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d5","configShort":"[Xe] 4f14 5d5 6s2"},{"number":76,"symbol":"Os","name":"Osmium","mass":190.233,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":6,"group":8,"block":"d","x":8,"y":6,"shells":[2,8,18,32,14,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d6","configShort":"[Xe] 4f14 5d6 6s2"},{"number":77,"symbol":"Ir","name":"Iridium","mass":192.2173,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":6,"group":9,"block":"d","x":9,"y":6,"shells":[2,8,18,32,15,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d7","configShort":"[Xe] 4f14 5d7 6s2"},{"number":78,"symbol":"Pt","name":"Platinum","mass":195.0849,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":6,"group":10,"block":"d","x":10,"y":6,"shells":[2,8,18,32,17,1],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s1 4f14 5d9","configShort":"[Xe] 4f14 5d9 6s1"},{"number":79,"symbol":"Au","name":"Gold","mass":196.9665695,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":6,"group":11,"block":"d","x":11,"y":6,"shells":[2,8,18,32,18,1],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s1 4f14 5d10","configShort":"[Xe] 4f14 5d10 6s1"},{"number":80,"symbol":"Hg","name":"Mercury","mass":200.5923,"phase":"Liquid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":6,"group":12,"block":"d","x":12,"y":6,"shells":[2,8,18,32,18,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10","configShort":"[Xe] 4f14 5d10 6s2"},{"number":81,"symbol":"Tl","name":"Thallium","mass":204.38,"phase":"Solid","category":"post-transition metal","categoryBase":"post-transition-metal","categoryLabel":"Post-transition metal","period":6,"group":13,"block":"p","x":13,"y":6,"shells":[2,8,18,32,18,3],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p1","configShort":"[Xe] 4f14 5d10 6s2 6p1"},{"number":82,"symbol":"Pb","name":"Lead","mass":207.21,"phase":"Solid","category":"post-transition metal","categoryBase":"post-transition-metal","categoryLabel":"Post-transition metal","period":6,"group":14,"block":"p","x":14,"y":6,"shells":[2,8,18,32,18,4],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p2","configShort":"[Xe] 4f14 5d10 6s2 6p2"},{"number":83,"symbol":"Bi","name":"Bismuth","mass":208.980401,"phase":"Solid","category":"post-transition metal","categoryBase":"post-transition-metal","categoryLabel":"Post-transition metal","period":6,"group":15,"block":"p","x":15,"y":6,"shells":[2,8,18,32,18,5],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p3","configShort":"[Xe] 4f14 5d10 6s2 6p3"},{"number":84,"symbol":"Po","name":"Polonium","mass":209,"phase":"Solid","category":"post-transition metal","categoryBase":"post-transition-metal","categoryLabel":"Post-transition metal","period":6,"group":16,"block":"p","x":16,"y":6,"shells":[2,8,18,32,18,6],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p4","configShort":"[Xe] 4f14 5d10 6s2 6p4"},{"number":85,"symbol":"At","name":"Astatine","mass":210,"phase":"Solid","category":"metalloid","categoryBase":"metalloid","categoryLabel":"Metalloid","period":6,"group":17,"block":"p","x":17,"y":6,"shells":[2,8,18,32,18,7],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p5","configShort":"[Xe] 4f14 5d10 6s2 6p5"},{"number":86,"symbol":"Rn","name":"Radon","mass":222,"phase":"Gas","category":"noble gas","categoryBase":"noble-gas","categoryLabel":"Noble gas","period":6,"group":18,"block":"p","x":18,"y":6,"shells":[2,8,18,32,18,8],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6","configShort":"[Xe] 4f14 5d10 6s2 6p6"},{"number":87,"symbol":"Fr","name":"Francium","mass":223,"phase":"Solid","category":"alkali metal","categoryBase":"alkali-metal","categoryLabel":"Alkali metal","period":7,"group":1,"block":"s","x":1,"y":7,"shells":[2,8,18,32,18,8,1],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s1","configShort":"[Rn] 7s1"},{"number":88,"symbol":"Ra","name":"Radium","mass":226,"phase":"Solid","category":"alkaline earth metal","categoryBase":"alkaline-earth-metal","categoryLabel":"Alkaline earth metal","period":7,"group":2,"block":"s","x":2,"y":7,"shells":[2,8,18,32,18,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2","configShort":"[Rn] 7s2"},{"number":89,"symbol":"Ac","name":"Actinium","mass":227,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"f","x":3,"y":10,"shells":[2,8,18,32,18,9,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 6d1","configShort":"[Rn] 6d1 7s2"},{"number":90,"symbol":"Th","name":"Thorium","mass":232.03774,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"f","x":4,"y":10,"shells":[2,8,18,32,18,10,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 6d2","configShort":"[Rn] 6d2 7s2"},{"number":91,"symbol":"Pa","name":"Protactinium","mass":231.035882,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"f","x":5,"y":10,"shells":[2,8,18,32,20,9,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f2 6d1","configShort":"[Rn] 5f2 6d1 7s2"},{"number":92,"symbol":"U","name":"Uranium","mass":238.028913,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"f","x":6,"y":10,"shells":[2,8,18,32,21,9,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f3 6d1","configShort":"[Rn] 5f3 6d1 7s2"},{"number":93,"symbol":"Np","name":"Neptunium","mass":237,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"f","x":7,"y":10,"shells":[2,8,18,32,22,9,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f4 6d1","configShort":"[Rn] 5f4 6d1 7s2"},{"number":94,"symbol":"Pu","name":"Plutonium","mass":244,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"f","x":8,"y":10,"shells":[2,8,18,32,24,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f6","configShort":"[Rn] 5f6 7s2"},{"number":95,"symbol":"Am","name":"Americium","mass":243,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"f","x":9,"y":10,"shells":[2,8,18,32,25,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f7","configShort":"[Rn] 5f7 7s2"},{"number":96,"symbol":"Cm","name":"Curium","mass":247,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"f","x":10,"y":10,"shells":[2,8,18,32,25,9,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f7 6d1","configShort":"[Rn] 5f7 6d1 7s2"},{"number":97,"symbol":"Bk","name":"Berkelium","mass":247,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"f","x":11,"y":10,"shells":[2,8,18,32,27,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f9","configShort":"[Rn] 5f9 7s2"},{"number":98,"symbol":"Cf","name":"Californium","mass":251,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"f","x":12,"y":10,"shells":[2,8,18,32,28,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f10","configShort":"[Rn] 5f10 7s2"},{"number":99,"symbol":"Es","name":"Einsteinium","mass":252,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"f","x":13,"y":10,"shells":[2,8,18,32,29,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f11","configShort":"[Rn] 5f11 7s2"},{"number":100,"symbol":"Fm","name":"Fermium","mass":257,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"f","x":14,"y":10,"shells":[2,8,18,32,30,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f12","configShort":"[Rn] 5f12 7s2"},{"number":101,"symbol":"Md","name":"Mendelevium","mass":258,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"f","x":15,"y":10,"shells":[2,8,18,32,31,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f13","configShort":"[Rn] 5f13 7s2"},{"number":102,"symbol":"No","name":"Nobelium","mass":259,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"f","x":16,"y":10,"shells":[2,8,18,32,32,8,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14","configShort":"[Rn] 5f14 7s2"},{"number":103,"symbol":"Lr","name":"Lawrencium","mass":266,"phase":"Solid","category":"actinide","categoryBase":"actinide","categoryLabel":"Actinide","period":7,"group":3,"block":"d","x":17,"y":10,"shells":[2,8,18,32,32,8,3],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 7p1","configShort":"[Rn] 5f14 7s2 7p1"},{"number":104,"symbol":"Rf","name":"Rutherfordium","mass":267,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":7,"group":4,"block":"d","x":4,"y":7,"shells":[2,8,18,32,32,10,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d2","configShort":"[Rn] 5f14 6d2 7s2"},{"number":105,"symbol":"Db","name":"Dubnium","mass":268,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":7,"group":5,"block":"d","x":5,"y":7,"shells":[2,8,18,32,32,11,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d3","configShort":"*[Rn] 5f14 6d3 7s2"},{"number":106,"symbol":"Sg","name":"Seaborgium","mass":269,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":7,"group":6,"block":"d","x":6,"y":7,"shells":[2,8,18,32,32,12,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d4","configShort":"*[Rn] 5f14 6d4 7s2"},{"number":107,"symbol":"Bh","name":"Bohrium","mass":270,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":7,"group":7,"block":"d","x":7,"y":7,"shells":[2,8,18,32,32,13,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d5","configShort":"*[Rn] 5f14 6d5 7s2"},{"number":108,"symbol":"Hs","name":"Hassium","mass":269,"phase":"Solid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":7,"group":8,"block":"d","x":8,"y":7,"shells":[2,8,18,32,32,14,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d6","configShort":"*[Rn] 5f14 6d6 7s2"},{"number":109,"symbol":"Mt","name":"Meitnerium","mass":278,"phase":"Solid","category":"unknown, probably transition metal","categoryBase":"transition-metal","categoryLabel":"Predicted transition metal","period":7,"group":9,"block":"d","x":9,"y":7,"shells":[2,8,18,32,32,15,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d7","configShort":"*[Rn] 5f14 6d7 7s2"},{"number":110,"symbol":"Ds","name":"Darmstadtium","mass":281,"phase":"Solid","category":"unknown, probably transition metal","categoryBase":"transition-metal","categoryLabel":"Predicted transition metal","period":7,"group":10,"block":"d","x":10,"y":7,"shells":[2,8,18,32,32,16,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d8","configShort":"*[Rn] 5f14 6d9 7s1"},{"number":111,"symbol":"Rg","name":"Roentgenium","mass":282,"phase":"Solid","category":"unknown, probably transition metal","categoryBase":"transition-metal","categoryLabel":"Predicted transition metal","period":7,"group":11,"block":"d","x":11,"y":7,"shells":[2,8,18,32,32,17,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d9","configShort":"*[Rn] 5f14 6d10 7s1"},{"number":112,"symbol":"Cn","name":"Copernicium","mass":285,"phase":"Liquid","category":"transition metal","categoryBase":"transition-metal","categoryLabel":"Transition metal","period":7,"group":12,"block":"d","x":12,"y":7,"shells":[2,8,18,32,32,18,2],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d10","configShort":"*[Rn] 5f14 6d10 7s2"},{"number":113,"symbol":"Nh","name":"Nihonium","mass":286,"phase":"Solid","category":"unknown, probably transition metal","categoryBase":"transition-metal","categoryLabel":"Predicted transition metal","period":7,"group":13,"block":"p","x":13,"y":7,"shells":[2,8,18,32,32,18,3],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d10 7p1","configShort":"*[Rn] 5f14 6d10 7s2 7p1"},{"number":114,"symbol":"Fl","name":"Flerovium","mass":289,"phase":"Solid","category":"post-transition metal","categoryBase":"post-transition-metal","categoryLabel":"Post-transition metal","period":7,"group":14,"block":"p","x":14,"y":7,"shells":[2,8,18,32,32,18,4],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d10 7p2","configShort":"*[Rn] 5f14 6d10 7s2 7p2"},{"number":115,"symbol":"Mc","name":"Moscovium","mass":289,"phase":"Solid","category":"unknown, probably post-transition metal","categoryBase":"post-transition-metal","categoryLabel":"Predicted post-transition metal","period":7,"group":15,"block":"p","x":15,"y":7,"shells":[2,8,18,32,32,18,5],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d10 7p3","configShort":"*[Rn] 5f14 6d10 7s2 7p3"},{"number":116,"symbol":"Lv","name":"Livermorium","mass":293,"phase":"Solid","category":"unknown, probably post-transition metal","categoryBase":"post-transition-metal","categoryLabel":"Predicted post-transition metal","period":7,"group":16,"block":"p","x":16,"y":7,"shells":[2,8,18,32,32,18,6],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d10 7p4","configShort":"*[Rn] 5f14 6d10 7s2 7p4"},{"number":117,"symbol":"Ts","name":"Tennessine","mass":294,"phase":"Solid","category":"unknown, probably metalloid","categoryBase":"metalloid","categoryLabel":"Predicted metalloid","period":7,"group":17,"block":"p","x":17,"y":7,"shells":[2,8,18,32,32,18,7],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d10 7p5","configShort":"*[Rn] 5f14 6d10 7s2 7p5"},{"number":118,"symbol":"Og","name":"Oganesson","mass":294,"phase":"Solid","category":"unknown, predicted to be noble gas","categoryBase":"noble-gas","categoryLabel":"Predicted noble gas","period":7,"group":18,"block":"p","x":18,"y":7,"shells":[2,8,18,32,32,18,8],"config":"1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6 7s2 5f14 6d10 7p6","configShort":"*[Rn] 5f14 6d10 7s2 7p6"}];
+window.PERIODIC_TABLE_CATEGORIES = [{"key":"alkali-metal","label":"Alkali metal"},{"key":"alkaline-earth-metal","label":"Alkaline earth"},{"key":"transition-metal","label":"Transition metal"},{"key":"post-transition-metal","label":"Post-transition"},{"key":"metalloid","label":"Metalloid"},{"key":"nonmetal","label":"Nonmetal"},{"key":"halogen","label":"Halogen"},{"key":"noble-gas","label":"Noble gas"},{"key":"lanthanide","label":"Lanthanide"},{"key":"actinide","label":"Actinide"}];
+
+</script>
+  <script>
+(() => {
+  const elements = Array.isArray(window.PERIODIC_TABLE_DATA) ? window.PERIODIC_TABLE_DATA : [];
+  const categories = Array.isArray(window.PERIODIC_TABLE_CATEGORIES) ? window.PERIODIC_TABLE_CATEGORIES : [];
+  const shellLetters = ["K", "L", "M", "N", "O", "P", "Q", "R"];
+  const EMBED_HEIGHT_MESSAGE = "periodic-table:height";
+  const isEmbeddedView =
+    document.documentElement.classList.contains("embed-mode") || window.self !== window.top;
+  const BLOCK_COLORS = {
+    s: "#2F6B6C",
+    p: "#B7832F",
+    d: "#A24D3F",
+    f: "#687640",
+  };
+  const BLOCK_INDICES = {
+    s: 0,
+    p: 1,
+    d: 2,
+    f: 3,
+  };
+  const ORBITAL_LABELS = ["s", "p", "d", "f"];
+  const ORBITAL_CAPACITIES = [2, 6, 10, 14];
+  const DESCRIPTOR_GROUPS = [
+    { start: 0, end: 7 },
+    { start: 7, end: 26 },
+    { start: 26, end: 30 },
+    { start: 30, end: 34 },
+  ];
+
+  const refs = {
+    grid: document.getElementById("periodicGrid"),
+    legend: document.getElementById("categoryLegend"),
+    tableScroll: document.querySelector(".table-scroll"),
+    search: document.getElementById("elementSearch"),
+    clearFilters: document.getElementById("clearFilters"),
+    emptyState: document.getElementById("tableEmptyState"),
+    detailCard: document.getElementById("detailCard"),
+    detailKicker: document.getElementById("detailKicker"),
+    detailTitle: document.getElementById("detailTitle"),
+    detailCategory: document.getElementById("detailCategory"),
+    statsGrid: document.getElementById("statsGrid"),
+    detailConfigShort: document.getElementById("detailConfigShort"),
+    detailConfigFull: document.getElementById("detailConfigFull"),
+    outerElectronPill: document.getElementById("outerElectronPill"),
+    shellChips: document.getElementById("shellChips"),
+    subatomicReps: document.getElementById("subatomicReps"),
+    valenceBars: document.getElementById("valenceBars"),
+    pcaSignature: document.getElementById("pcaSignature"),
+    detailBlurb: document.getElementById("detailBlurb"),
+    atomCanvasWrap: document.getElementById("atomCanvasWrap"),
+    atomCanvas: document.getElementById("atomCanvas"),
+  };
+
+  const buttonByNumber = new Map();
+  const legendByCategory = new Map();
+  const elementsByNumber = new Map(elements.map((element) => [element.number, element]));
+  const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let subatomicProfilesByNumber = new Map();
+
+  const state = {
+    selectedNumber: 32,
+    activeCategory: null,
+    searchQuery: "",
+    reducedMotion: motionQuery.matches,
+  };
+
+  let animationFrame = null;
+  let resizeObserver = null;
+  let pageResizeObserver = null;
+  let embedLayoutObserver = null;
+  let embedHeightFrame = null;
+
+  if (!elements.length || !refs.grid) {
+    return;
+  }
+
+  try {
+    subatomicProfilesByNumber = buildSubatomicProfiles(elements);
+  } catch (error) {
+    console.error("Failed to build periodic-table subatomic profiles.", error);
+  }
+
+  init();
+
+  function init() {
+    renderLegend();
+    renderGrid();
+    bindEvents();
+    setupEmbedLayout();
+    applyFilters();
+    selectElement(state.selectedNumber, { updateFilters: false });
+    setupEmbedBridge();
+    setupAtomCanvas();
+    if (state.reducedMotion) {
+      drawAtom(0);
+    } else {
+      startAnimation();
+    }
+  }
+
+  function getEffectiveCategoryKey(element) {
+    if (element && element.group === 17) {
+      return "halogen";
+    }
+
+    return element.categoryBase;
+  }
+
+  function getEffectiveCategoryLabel(element) {
+    const categoryKey = getEffectiveCategoryKey(element);
+    if (categoryKey === "halogen") {
+      return "Halogen";
+    }
+
+    return element.categoryLabel;
+  }
+
+  function renderLegend() {
+    refs.legend.innerHTML = "";
+    categories.forEach((category) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `legend-chip cat-${category.key}`;
+      button.textContent = category.label;
+      button.setAttribute("aria-pressed", "false");
+      button.dataset.category = category.key;
+      button.addEventListener("click", () => {
+        state.activeCategory = state.activeCategory === category.key ? null : category.key;
+        renderLegendState();
+        applyFilters(true);
+      });
+      refs.legend.appendChild(button);
+      legendByCategory.set(category.key, button);
+    });
+  }
+
+  function renderLegendState() {
+    legendByCategory.forEach((button, categoryKey) => {
+      const isActive = state.activeCategory === categoryKey;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    });
+  }
+
+  function renderGrid() {
+    refs.grid.innerHTML = "";
+
+    const lanthanideLabel = document.createElement("div");
+    lanthanideLabel.className = "series-label";
+    lanthanideLabel.style.gridColumn = "1 / span 2";
+    lanthanideLabel.style.gridRow = "9";
+    lanthanideLabel.innerHTML = "<strong>Lanthanides</strong><span>57–71</span>";
+    refs.grid.appendChild(lanthanideLabel);
+
+    const actinideLabel = document.createElement("div");
+    actinideLabel.className = "series-label";
+    actinideLabel.style.gridColumn = "1 / span 2";
+    actinideLabel.style.gridRow = "10";
+    actinideLabel.innerHTML = "<strong>Actinides</strong><span>89–103</span>";
+    refs.grid.appendChild(actinideLabel);
+
+    elements.forEach((element) => {
+      const categoryKey = getEffectiveCategoryKey(element);
+      const categoryLabel = getEffectiveCategoryLabel(element);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `element-card cat-${categoryKey}`;
+      button.dataset.number = String(element.number);
+      button.dataset.category = categoryKey;
+      button.dataset.search = `${element.name} ${element.symbol} ${element.number}`.toLowerCase();
+      button.style.gridColumn = String(element.x);
+      button.style.gridRow = String(element.y);
+      button.title = `${element.name} (${element.symbol})`;
+      button.setAttribute(
+        "aria-label",
+        `${element.name}, atomic number ${element.number}, ${categoryLabel}`
+      );
+
+      button.innerHTML = `
+        <span class="element-number">${element.number}</span>
+        <span class="element-symbol">${element.symbol}</span>
+        <span class="element-name">${element.name}</span>
+      `;
+
+      button.addEventListener("click", () => {
+        selectElement(element.number);
+      });
+
+      buttonByNumber.set(element.number, button);
+      refs.grid.appendChild(button);
+    });
+  }
+
+  function bindEvents() {
+    refs.search.addEventListener("input", (event) => {
+      state.searchQuery = event.currentTarget.value.trim().toLowerCase();
+      applyFilters(true);
+    });
+
+    refs.search.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        const firstVisible = getVisibleElements()[0];
+        if (firstVisible) {
+          selectElement(firstVisible.number);
+        }
+      }
+    });
+
+    refs.clearFilters.addEventListener("click", () => {
+      state.searchQuery = "";
+      state.activeCategory = null;
+      refs.search.value = "";
+      renderLegendState();
+      applyFilters(true);
+      refs.search.focus();
+    });
+
+    motionQuery.addEventListener("change", (event) => {
+      state.reducedMotion = event.matches;
+      if (state.reducedMotion) {
+        stopAnimation();
+        drawAtom(0);
+      } else {
+        startAnimation();
+      }
+    });
+
+    window.addEventListener(
+      "resize",
+      () => {
+        drawAtom();
+        notifyEmbedHeight();
+      },
+      { passive: true }
+    );
+  }
+
+  function selectElement(number, options = {}) {
+    const { updateFilters = false } = options;
+    if (!elementsByNumber.has(number)) {
+      return;
+    }
+
+    state.selectedNumber = number;
+    updateSelectionStyles();
+    renderDetails();
+
+    if (updateFilters) {
+      applyFilters(false);
+    }
+  }
+
+  function updateSelectionStyles() {
+    buttonByNumber.forEach((button, number) => {
+      const selected = number === state.selectedNumber;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+  }
+
+  function applyFilters(syncSelection = false) {
+    const visibleElements = getVisibleElements();
+    const visibleNumbers = new Set(visibleElements.map((element) => element.number));
+
+    buttonByNumber.forEach((button, number) => {
+      const isVisible = visibleNumbers.has(number);
+      button.classList.toggle("is-dimmed", !isVisible);
+      button.setAttribute("aria-hidden", String(!isVisible));
+    });
+
+    refs.emptyState.classList.toggle("hidden", visibleElements.length > 0);
+
+    if (syncSelection && visibleElements.length > 0 && !visibleNumbers.has(state.selectedNumber)) {
+      state.selectedNumber = visibleElements[0].number;
+      updateSelectionStyles();
+      renderDetails();
+    }
+
+    if (!visibleElements.length) {
+      refs.clearFilters.disabled = false;
+      notifyEmbedHeight();
+      return;
+    }
+
+    refs.clearFilters.disabled = !state.searchQuery && !state.activeCategory;
+    notifyEmbedHeight();
+  }
+
+  function getVisibleElements() {
+    return elements.filter((element) => {
+      const categoryMatch =
+        !state.activeCategory || getEffectiveCategoryKey(element) === state.activeCategory;
+      const searchMatch =
+        !state.searchQuery ||
+        `${element.name} ${element.symbol} ${element.number}`
+          .toLowerCase()
+          .includes(state.searchQuery);
+
+      return categoryMatch && searchMatch;
+    });
+  }
+
+  function renderDetails() {
+    const element = elementsByNumber.get(state.selectedNumber);
+    if (!element) {
+      return;
+    }
+
+    const outerElectrons = element.shells[element.shells.length - 1] || 0;
+    const phaseText = element.phase ? toTitleCase(element.phase) : "Unknown phase";
+    const blockText = `${element.block.toUpperCase()}-block`;
+    const categoryKey = getEffectiveCategoryKey(element);
+    const categoryLabel = getEffectiveCategoryLabel(element);
+
+    refs.detailCard.className = `detail-card cat-${categoryKey}`;
+    refs.detailKicker.textContent = `Atomic number ${element.number}`;
+    refs.detailTitle.textContent = `${element.name} (${element.symbol})`;
+    refs.detailCategory.textContent = `${categoryLabel} • ${phaseText} • ${blockText}`;
+    refs.detailConfigShort.textContent = element.configShort || element.config;
+    refs.detailConfigFull.textContent = element.config;
+    refs.outerElectronPill.textContent = `${outerElectrons} outer electron${outerElectrons === 1 ? "" : "s"}`;
+    refs.detailBlurb.textContent = buildNarrative(element);
+    refs.statsGrid.setAttribute("aria-label", isEmbeddedView ? "Element summary" : "Element statistics");
+
+    renderStats(element, outerElectrons);
+    renderShells(element.shells);
+    renderSubatomicRepresentations(element);
+
+    if (state.reducedMotion) {
+      drawAtom(0);
+    }
+
+    notifyEmbedHeight();
+  }
+
+  function renderStats(element, outerElectrons) {
+    const stats = isEmbeddedView
+      ? [
+          ["Atomic no.", String(element.number)],
+          ["Period", String(element.period)],
+          ["Group", element.group ? String(element.group) : "—"],
+          ["Block", `${element.block.toUpperCase()}-block`],
+        ]
+      : [
+          ["Atomic no.", String(element.number)],
+          ["Atomic mass", formatMass(element.mass)],
+          ["Period", String(element.period)],
+          ["Group", String(element.group)],
+          ["Block", element.block.toUpperCase()],
+          ["Phase", toTitleCase(element.phase)],
+          ["Shells", String(element.shells.length)],
+          ["Valence e⁻", String(outerElectrons)],
+        ];
+
+    refs.statsGrid.innerHTML = "";
+    stats.forEach(([label, value]) => {
+      const card = document.createElement("div");
+      card.className = "stat-card";
+      card.innerHTML = `
+        <span class="stat-label">${label}</span>
+        <span class="stat-value">${value}</span>
+      `;
+      refs.statsGrid.appendChild(card);
+    });
+  }
+
+  function renderShells(shells) {
+    refs.shellChips.innerHTML = "";
+    shells.forEach((count, index) => {
+      const chip = document.createElement("span");
+      chip.className = "shell-chip";
+      chip.innerHTML = `<strong>${shellLetters[index] || `n${index + 1}`}</strong><span>${count} e⁻</span>`;
+      refs.shellChips.appendChild(chip);
+    });
+  }
+
+  function renderSubatomicRepresentations(element) {
+    if (!refs.valenceBars || !refs.pcaSignature) {
+      return;
+    }
+
+    const profile = subatomicProfilesByNumber.get(element.number);
+    if (!profile) {
+      refs.valenceBars.innerHTML = "";
+      refs.pcaSignature.innerHTML = "";
+      return;
+    }
+
+    const accentColor = BLOCK_COLORS[element.block] || BLOCK_COLORS.p;
+    const accentSoft = lightenHex(accentColor, 0.45);
+
+    if (refs.subatomicReps) {
+      refs.subatomicReps.style.setProperty("--subatomic-accent", accentColor);
+      refs.subatomicReps.style.setProperty("--subatomic-accent-soft", accentSoft);
+    }
+
+    renderValenceBars(profile, accentColor);
+    renderPcaSignature(profile, element, accentColor, accentSoft);
+  }
+
+  function renderValenceBars(profile, accentColor) {
+    refs.valenceBars.innerHTML = "";
+
+    const fragment = document.createDocumentFragment();
+    profile.valenceCounts.forEach((count, index) => {
+      const row = document.createElement("div");
+      const label = document.createElement("span");
+      const track = document.createElement("span");
+      const fill = document.createElement("span");
+      const countLabel = document.createElement("span");
+      const capacity = ORBITAL_CAPACITIES[index];
+      const fillWidth = capacity > 0 ? (Math.max(0, Math.min(count, capacity)) / capacity) * 100 : 0;
+
+      row.className = "subatomic-bar-row";
+      label.className = "subatomic-bar-label";
+      track.className = "subatomic-bar-track";
+      fill.className = "subatomic-bar-fill";
+      countLabel.className = "subatomic-bar-count";
+
+      label.textContent = ORBITAL_LABELS[index];
+      fill.style.width = `${fillWidth}%`;
+      fill.style.backgroundColor = accentColor;
+      countLabel.textContent = `${count}/${capacity}`;
+
+      track.appendChild(fill);
+      row.append(label, track, countLabel);
+      fragment.appendChild(row);
+    });
+
+    refs.valenceBars.appendChild(fragment);
+  }
+
+  function renderPcaSignature(profile, element, accentColor, accentSoft) {
+    refs.pcaSignature.innerHTML = "";
+    refs.pcaSignature.setAttribute("aria-label", `PCA24 signature for ${element.name}`);
+
+    const frame = document.createElement("div");
+    const plot = document.createElement("div");
+    const baseline = document.createElement("span");
+    const bars = document.createElement("div");
+    const ticks = document.createElement("div");
+    const tickValues = [1, 8, 16, 24];
+    const maxMagnitude = profile.signature.reduce(
+      (largest, value) => Math.max(largest, Math.abs(value)),
+      0.55
+    );
+
+    frame.className = "pca-signature-frame";
+    plot.className = "pca-signature-plot";
+    baseline.className = "pca-signature-baseline";
+    bars.className = "pca-signature-bars";
+    ticks.className = "pca-signature-ticks";
+
+    plot.appendChild(baseline);
+
+    tickValues.forEach((tick) => {
+      const guide = document.createElement("span");
+      guide.className = "pca-signature-guide";
+      guide.style.left = `${(tick / profile.signature.length) * 100}%`;
+      plot.appendChild(guide);
+    });
+
+    profile.signature.forEach((value) => {
+      const slot = document.createElement("span");
+      const bar = document.createElement("span");
+
+      slot.className = "pca-signature-slot";
+      bar.className = `pca-signature-bar ${value >= 0 ? "is-positive" : "is-negative"}`;
+      bar.style.height = `${(Math.abs(value) / maxMagnitude) * 46}%`;
+      bar.style.backgroundColor = value >= 0 ? accentColor : accentSoft;
+
+      slot.appendChild(bar);
+      bars.appendChild(slot);
+    });
+
+    tickValues.forEach((tick) => {
+      const label = document.createElement("span");
+      label.textContent = String(tick);
+      label.style.gridColumn = String(Math.min(tick, profile.signature.length));
+
+      if (tick === 1) {
+        label.classList.add("is-start");
+      }
+
+      if (tick === profile.signature.length) {
+        label.classList.add("is-end");
+      }
+
+      ticks.appendChild(label);
+    });
+
+    plot.appendChild(bars);
+    frame.append(plot, ticks);
+    refs.pcaSignature.appendChild(frame);
+  }
+
+  function buildSubatomicProfiles(items) {
+    const descriptorTable = [];
+    const profileRows = [];
+
+    items.forEach((element) => {
+      const parsedCounts = parseValenceCounts(element.configShort || element.config);
+      const valenceCounts = ORBITAL_LABELS.map((label) => parsedCounts[label] || 0);
+
+      descriptorTable.push(buildChemDescriptor(element, valenceCounts));
+      profileRows.push({
+        number: element.number,
+        valenceCounts,
+      });
+    });
+
+    const signatures = buildPcaSignatures(descriptorTable, 24);
+    return new Map(
+      profileRows.map((profile, index) => [
+        profile.number,
+        {
+          valenceCounts: profile.valenceCounts,
+          valenceFractions: profile.valenceCounts.map(
+            (count, orbitalIndex) => count / ORBITAL_CAPACITIES[orbitalIndex]
+          ),
+          signature: signatures[index] || new Array(24).fill(0),
+        },
+      ])
+    );
+  }
+
+  function parseValenceCounts(configText) {
+    const counts = {
+      s: 0,
+      p: 0,
+      d: 0,
+      f: 0,
+    };
+    const normalized = String(configText || "")
+      .replace(/\[[^\]]+\]/g, "")
+      .replace(/\*/g, "")
+      .replace(/\s+/g, "");
+    const pattern = /(\d)([spdf])(\d+)(?=(?:\d[spdf])|$)/g;
+    let match = pattern.exec(normalized);
+
+    while (match) {
+      counts[match[2]] += Number.parseInt(match[3], 10);
+      match = pattern.exec(normalized);
+    }
+
+    return counts;
+  }
+
+  function buildChemDescriptor(element, valenceCounts) {
+    const descriptor = new Array(34).fill(0);
+    const period = Math.min(7, Math.max(1, Number(element.period) || 1));
+    const descriptorGroup =
+      element.block === "f" ? 0 : Math.min(18, Math.max(0, Number(element.group) || 0));
+    const blockIndex = BLOCK_INDICES[element.block] ?? BLOCK_INDICES.p;
+
+    descriptor[period - 1] = 1;
+    descriptor[7 + descriptorGroup] = 1;
+    descriptor[26 + blockIndex] = 1;
+
+    valenceCounts.forEach((count, orbitalIndex) => {
+      descriptor[30 + orbitalIndex] = Math.max(
+        0,
+        Math.min(1, count / ORBITAL_CAPACITIES[orbitalIndex])
+      );
+    });
+
+    return descriptor;
+  }
+
+  function buildPcaSignatures(descriptorTable, outputDimensions) {
+    if (!descriptorTable.length) {
+      return [];
+    }
+
+    const { weighted } = standardizeAndWeightDescriptors(descriptorTable);
+    const covariance = computeCovarianceMatrix(weighted);
+    const { eigenvalues, eigenvectors } = jacobiEigenDecomposition(covariance);
+    const descriptorDimensions = weighted[0].length;
+    const componentCount = Math.min(outputDimensions, descriptorDimensions);
+    const order = eigenvalues
+      .map((value, index) => ({ value, index }))
+      .sort((left, right) => right.value - left.value)
+      .map((entry) => entry.index);
+    const components = Array.from(
+      { length: descriptorDimensions },
+      () => new Array(componentCount).fill(0)
+    );
+
+    for (let componentIndex = 0; componentIndex < componentCount; componentIndex += 1) {
+      const eigenIndex = order[componentIndex];
+      for (let rowIndex = 0; rowIndex < descriptorDimensions; rowIndex += 1) {
+        components[rowIndex][componentIndex] = eigenvectors[rowIndex][eigenIndex];
+      }
+    }
+
+    for (let componentIndex = 0; componentIndex < componentCount; componentIndex += 1) {
+      let pivotIndex = 0;
+      let pivotMagnitude = 0;
+
+      for (let rowIndex = 0; rowIndex < descriptorDimensions; rowIndex += 1) {
+        const magnitude = Math.abs(components[rowIndex][componentIndex]);
+        if (magnitude > pivotMagnitude) {
+          pivotMagnitude = magnitude;
+          pivotIndex = rowIndex;
+        }
+      }
+
+      if (components[pivotIndex][componentIndex] < 0) {
+        for (let rowIndex = 0; rowIndex < descriptorDimensions; rowIndex += 1) {
+          components[rowIndex][componentIndex] *= -1;
+        }
+      }
+    }
+
+    return weighted.map((row) => {
+      const projected = new Array(componentCount).fill(0);
+      for (let componentIndex = 0; componentIndex < componentCount; componentIndex += 1) {
+        let total = 0;
+        for (let channelIndex = 0; channelIndex < descriptorDimensions; channelIndex += 1) {
+          total += row[channelIndex] * components[channelIndex][componentIndex];
+        }
+        projected[componentIndex] = total;
+      }
+
+      const norm = vectorNorm(projected) || 1;
+      return projected.map((value) => value / norm);
+    });
+  }
+
+  function standardizeAndWeightDescriptors(descriptorTable) {
+    const rowCount = descriptorTable.length;
+    const columnCount = descriptorTable[0].length;
+    const mean = new Array(columnCount).fill(0);
+    const std = new Array(columnCount).fill(0);
+
+    descriptorTable.forEach((row) => {
+      row.forEach((value, columnIndex) => {
+        mean[columnIndex] += value;
+      });
+    });
+
+    for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+      mean[columnIndex] /= rowCount;
+    }
+
+    descriptorTable.forEach((row) => {
+      row.forEach((value, columnIndex) => {
+        const diff = value - mean[columnIndex];
+        std[columnIndex] += diff * diff;
+      });
+    });
+
+    for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+      const sigma = Math.sqrt(std[columnIndex] / rowCount);
+      std[columnIndex] = sigma > 1e-6 ? sigma : 1;
+    }
+
+    const weighted = descriptorTable.map((row) =>
+      row.map((value, columnIndex) => (value - mean[columnIndex]) / std[columnIndex])
+    );
+
+    DESCRIPTOR_GROUPS.forEach(({ start, end }) => {
+      const weight = (end - start) ** -0.5;
+      weighted.forEach((row) => {
+        for (let columnIndex = start; columnIndex < end; columnIndex += 1) {
+          row[columnIndex] *= weight;
+        }
+      });
+    });
+
+    return { mean, std, weighted };
+  }
+
+  function computeCovarianceMatrix(matrix) {
+    const columnCount = matrix[0].length;
+    const covariance = Array.from({ length: columnCount }, () => new Array(columnCount).fill(0));
+
+    matrix.forEach((row) => {
+      for (let leftIndex = 0; leftIndex < columnCount; leftIndex += 1) {
+        for (let rightIndex = leftIndex; rightIndex < columnCount; rightIndex += 1) {
+          covariance[leftIndex][rightIndex] += row[leftIndex] * row[rightIndex];
+        }
+      }
+    });
+
+    for (let leftIndex = 0; leftIndex < columnCount; leftIndex += 1) {
+      for (let rightIndex = leftIndex + 1; rightIndex < columnCount; rightIndex += 1) {
+        covariance[rightIndex][leftIndex] = covariance[leftIndex][rightIndex];
+      }
+    }
+
+    return covariance;
+  }
+
+  function jacobiEigenDecomposition(matrix) {
+    const size = matrix.length;
+    const working = matrix.map((row) => row.slice());
+    const eigenvectors = Array.from({ length: size }, (_, rowIndex) =>
+      Array.from({ length: size }, (_, columnIndex) => (rowIndex === columnIndex ? 1 : 0))
+    );
+    const tolerance = 1e-10;
+    const maxSweeps = 80;
+
+    for (let sweep = 0; sweep < maxSweeps; sweep += 1) {
+      let maxOffDiagonal = 0;
+
+      for (let p = 0; p < size - 1; p += 1) {
+        for (let q = p + 1; q < size; q += 1) {
+          const entry = working[p][q];
+          const magnitude = Math.abs(entry);
+          if (magnitude > maxOffDiagonal) {
+            maxOffDiagonal = magnitude;
+          }
+
+          if (magnitude <= tolerance) {
+            continue;
+          }
+
+          const app = working[p][p];
+          const aqq = working[q][q];
+          const tau = (aqq - app) / (2 * entry);
+          const t =
+            tau === 0
+              ? 1
+              : Math.sign(tau) / (Math.abs(tau) + Math.sqrt(1 + tau * tau));
+          const cosine = 1 / Math.sqrt(1 + t * t);
+          const sine = t * cosine;
+
+          for (let index = 0; index < size; index += 1) {
+            if (index === p || index === q) {
+              continue;
+            }
+
+            const valueP = working[index][p];
+            const valueQ = working[index][q];
+            const rotatedP = cosine * valueP - sine * valueQ;
+            const rotatedQ = cosine * valueQ + sine * valueP;
+
+            working[index][p] = rotatedP;
+            working[p][index] = rotatedP;
+            working[index][q] = rotatedQ;
+            working[q][index] = rotatedQ;
+          }
+
+          working[p][p] = cosine * cosine * app - 2 * sine * cosine * entry + sine * sine * aqq;
+          working[q][q] = sine * sine * app + 2 * sine * cosine * entry + cosine * cosine * aqq;
+          working[p][q] = 0;
+          working[q][p] = 0;
+
+          for (let index = 0; index < size; index += 1) {
+            const vectorP = eigenvectors[index][p];
+            const vectorQ = eigenvectors[index][q];
+            eigenvectors[index][p] = cosine * vectorP - sine * vectorQ;
+            eigenvectors[index][q] = sine * vectorP + cosine * vectorQ;
+          }
+        }
+      }
+
+      if (maxOffDiagonal <= tolerance) {
+        break;
+      }
+    }
+
+    return {
+      eigenvalues: Array.from({ length: size }, (_, index) => Math.max(working[index][index], 0)),
+      eigenvectors,
+    };
+  }
+
+  function vectorNorm(values) {
+    let total = 0;
+    values.forEach((value) => {
+      total += value * value;
+    });
+    return Math.sqrt(total);
+  }
+
+  function lightenHex(color, amount) {
+    const normalized = String(color || "").trim().replace("#", "");
+    const hex =
+      normalized.length === 3
+        ? normalized
+            .split("")
+            .map((character) => character + character)
+            .join("")
+        : normalized;
+
+    if (!/^[0-9a-f]{6}$/i.test(hex)) {
+      return color;
+    }
+
+    const channels = [0, 2, 4].map((start) => Number.parseInt(hex.slice(start, start + 2), 16));
+    const mixed = channels.map((channel) =>
+      Math.round((1 - amount) * 255 + amount * channel)
+    );
+
+    return `#${mixed.map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
+  }
+
+  function buildNarrative(element) {
+    const outerElectrons = element.shells[element.shells.length - 1] || 0;
+    const shellText = element.shells.join(" • ");
+    const groupText =
+      element.categoryBase === "lanthanide" || element.categoryBase === "actinide"
+        ? `the ${element.categoryLabel.toLowerCase()} series`
+        : `group ${element.group}`;
+
+    return `${element.name} sits in period ${element.period}, ${groupText}, and the ${element.block}-block. ` +
+      `Its shell distribution is ${shellText}, giving it ${outerElectrons} electron${outerElectrons === 1 ? "" : "s"} ` +
+      `in the outermost shell. This compact view highlights the periodic and electronic-structure features that make Subatomic Tokenization chemically meaningful.`;
+  }
+
+  function formatMass(value) {
+    if (typeof value !== "number" || Number.isNaN(value)) {
+      return "—";
+    }
+
+    const formatter = new Intl.NumberFormat("en-US", {
+      maximumFractionDigits: value >= 100 ? 3 : 4,
+    });
+
+    return `${formatter.format(value)} u`;
+  }
+
+  function toTitleCase(value) {
+    return String(value || "")
+      .split(" ")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(" ");
+  }
+
+  function setupAtomCanvas() {
+    if (!window.ResizeObserver) {
+      drawAtom(0);
+      return;
+    }
+
+    resizeObserver = new ResizeObserver(() => {
+      drawAtom(0);
+      notifyEmbedHeight();
+    });
+
+    resizeObserver.observe(refs.atomCanvasWrap);
+  }
+
+  function setupEmbedBridge() {
+    if (!isEmbeddedView || !window.parent || window.parent === window) {
+      return;
+    }
+
+    if (window.ResizeObserver) {
+      pageResizeObserver = new ResizeObserver(() => {
+        notifyEmbedHeight();
+      });
+      pageResizeObserver.observe(document.documentElement);
+      pageResizeObserver.observe(document.body);
+    }
+
+    window.addEventListener("load", notifyEmbedHeight, { once: true });
+    notifyEmbedHeight();
+  }
+
+  function setupEmbedLayout() {
+    if (!isEmbeddedView || !refs.grid || !refs.tableScroll) {
+      return;
+    }
+
+    syncEmbedGridSize();
+
+    if (!window.ResizeObserver) {
+      return;
+    }
+
+    embedLayoutObserver = new ResizeObserver(() => {
+      syncEmbedGridSize();
+      notifyEmbedHeight();
+    });
+
+    embedLayoutObserver.observe(refs.tableScroll);
+  }
+
+  function syncEmbedGridSize() {
+    if (!isEmbeddedView || !refs.grid || !refs.tableScroll) {
+      return;
+    }
+
+    const availableWidth = refs.tableScroll.clientWidth;
+    if (!availableWidth) {
+      return;
+    }
+
+    const gridStyles = window.getComputedStyle(refs.grid);
+    const gap = Number.parseFloat(gridStyles.columnGap || gridStyles.gap || "0") || 0;
+    const columns = 18;
+    const tileSize = (availableWidth - gap * (columns - 1)) / columns;
+
+    if (!Number.isFinite(tileSize) || tileSize <= 0) {
+      return;
+    }
+
+    refs.grid.style.setProperty("--tile-size", `${tileSize}px`);
+  }
+
+  function notifyEmbedHeight() {
+    if (!isEmbeddedView || !window.parent || window.parent === window) {
+      return;
+    }
+
+    if (embedHeightFrame) {
+      return;
+    }
+
+    embedHeightFrame = window.requestAnimationFrame(() => {
+      embedHeightFrame = null;
+
+      const root = document.documentElement;
+      const body = document.body;
+      const pageShell = document.querySelector(".page-shell");
+      const shellHeight = pageShell
+        ? Math.ceil(pageShell.getBoundingClientRect().height || 0)
+        : 0;
+      const documentHeight = Math.ceil(
+        Math.max(
+          root ? root.scrollHeight : 0,
+          root ? root.offsetHeight : 0,
+          body ? body.scrollHeight : 0,
+          body ? body.offsetHeight : 0
+        )
+      );
+      const height = shellHeight > 0 ? shellHeight : documentHeight;
+
+      window.parent.postMessage(
+        {
+          type: EMBED_HEIGHT_MESSAGE,
+          height,
+        },
+        "*"
+      );
+    });
+  }
+
+  function startAnimation() {
+    if (animationFrame) {
+      return;
+    }
+
+    const tick = (timestamp) => {
+      drawAtom(timestamp);
+      animationFrame = window.requestAnimationFrame(tick);
+    };
+
+    animationFrame = window.requestAnimationFrame(tick);
+  }
+
+  function stopAnimation() {
+    if (animationFrame) {
+      window.cancelAnimationFrame(animationFrame);
+      animationFrame = null;
+    }
+  }
+
+  function drawAtom(timestamp = 0) {
+    const element = elementsByNumber.get(state.selectedNumber);
+    const canvas = refs.atomCanvas;
+    if (!canvas || !element) {
+      return;
+    }
+
+    const rect = refs.atomCanvasWrap.getBoundingClientRect();
+    const width = Math.max(1, Math.round(rect.width));
+    const height = Math.max(1, Math.round(rect.height));
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+    }
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      return;
+    }
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+
+    const cx = width / 2;
+    const cy = height / 2;
+    const maxDimension = Math.min(width, height);
+    const shells = element.shells;
+    const nucleusRadius = Math.max(16, maxDimension * 0.065);
+    const firstRadius = nucleusRadius + maxDimension * 0.12;
+    const maxRadius = maxDimension * 0.42;
+    const radiusStep = shells.length > 1 ? (maxRadius - firstRadius) / (shells.length - 1) : 0;
+
+    drawBackgroundGlow(ctx, cx, cy, maxDimension);
+
+    shells.forEach((count, shellIndex) => {
+      const radius = firstRadius + radiusStep * shellIndex;
+      const ry = radius * (0.42 + shellIndex * 0.015);
+      const rotation = ((shellIndex * 24) + 12) * (Math.PI / 180);
+      const speedDirection = shellIndex % 2 === 0 ? 1 : -1;
+      const angularSpeed = state.reducedMotion ? 0 : (0.00015 + shellIndex * 0.00003) * speedDirection;
+      const electronRadius = Math.max(2.2, 4.8 - shellIndex * 0.35);
+
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, radius, ry, rotation, 0, Math.PI * 2);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(15, 23, 42, 0.10)";
+      ctx.stroke();
+
+      for (let electronIndex = 0; electronIndex < count; electronIndex += 1) {
+        const baseAngle = (Math.PI * 2 * electronIndex) / count;
+        const angle = baseAngle + timestamp * angularSpeed;
+        const point = ellipsePoint(cx, cy, radius, ry, rotation, angle);
+
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, electronRadius, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(73, 102, 255, 0.92)";
+        ctx.shadowColor = "rgba(73, 102, 255, 0.25)";
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    });
+
+    drawNucleus(ctx, cx, cy, nucleusRadius);
+  }
+
+  function drawBackgroundGlow(ctx, cx, cy, maxDimension) {
+    const glow = ctx.createRadialGradient(cx, cy, maxDimension * 0.02, cx, cy, maxDimension * 0.5);
+    glow.addColorStop(0, "rgba(255, 255, 255, 0.88)");
+    glow.addColorStop(0.55, "rgba(255, 255, 255, 0.38)");
+    glow.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, maxDimension * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawNucleus(ctx, cx, cy, radius) {
+    const gradient = ctx.createRadialGradient(cx - radius * 0.3, cy - radius * 0.3, radius * 0.2, cx, cy, radius);
+    gradient.addColorStop(0, "rgba(255, 206, 170, 0.98)");
+    gradient.addColorStop(0.45, "rgba(255, 135, 108, 0.95)");
+    gradient.addColorStop(1, "rgba(233, 82, 82, 0.96)");
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    const highlight = ctx.createRadialGradient(cx - radius * 0.35, cy - radius * 0.35, 0, cx - radius * 0.35, cy - radius * 0.35, radius * 0.8);
+    highlight.addColorStop(0, "rgba(255, 255, 255, 0.7)");
+    highlight.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = highlight;
+    ctx.beginPath();
+    ctx.arc(cx - radius * 0.18, cy - radius * 0.14, radius * 0.9, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function ellipsePoint(cx, cy, rx, ry, rotation, angle) {
+    const x = rx * Math.cos(angle);
+    const y = ry * Math.sin(angle);
+
+    return {
+      x: cx + (x * Math.cos(rotation) - y * Math.sin(rotation)),
+      y: cy + (x * Math.sin(rotation) + y * Math.cos(rotation)),
+    };
+  }
+})();
+
+</script>
+</body>
+</html>

@@ -51,7 +51,18 @@ ninja.data = [{
               handler: () => {
                 window.location.href = "https://gram-blogposts.github.io/2024/";
               },
-            },{id: "post-blowup-and-blowdown-in-deep-learning-tracking-symmetry-breaking-with-algebraic-geometry",
+            },{id: "post-crystalite-a-lightweight-transformer-for-efficient-crystal-modeling",
+        
+          title: "Crystalite: A Lightweight Transformer for Efficient Crystal Modeling",
+        
+        description: "Crystalite is a lightweight diffusion Transformer for crystal generation and crystal structure prediction. This post covers its chemistry-aware atom encoding, geometry-aware attention mechanism, and benchmark results.",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/2026/blog/2026/crystalite/";
+          
+        },
+      },{id: "post-blowup-and-blowdown-in-deep-learning-tracking-symmetry-breaking-with-algebraic-geometry",
         
           title: "Blowup and Blowdown in Deep Learning: Tracking Symmetry Breaking with Algebraic Geometry",
         
