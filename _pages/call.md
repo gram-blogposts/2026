@@ -3,7 +3,7 @@ layout: page
 title: call for blogposts
 permalink: /call/
 description:
-nav: true
+nav: false
 nav_order: 2
 ---
 

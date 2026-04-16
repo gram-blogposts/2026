@@ -3,7 +3,7 @@ layout: page
 title: submitting
 permalink: /submitting/
 description:
-nav: true
+nav: false
 nav_order: 3
 ---
 
