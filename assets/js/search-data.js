@@ -16,26 +16,12 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/2026/about/";
           },
-        },{id: "nav-call-for-blogposts",
-          title: "call for blogposts",
-          description: "",
-          section: "Navigation",
-          handler: () => {
-            window.location.href = "/2026/call/";
-          },
-        },{id: "nav-blog",
-          title: "blog",
+        },{id: "nav-accepted-posts",
+          title: "accepted posts",
           description: "",
           section: "Navigation",
           handler: () => {
             window.location.href = "/2026/blog/";
-          },
-        },{id: "nav-submitting",
-          title: "submitting",
-          description: "",
-          section: "Navigation",
-          handler: () => {
-            window.location.href = "/2026/submitting/";
           },
         },{id: "dropdown-lt-strong-gt-2026-lt-strong-gt",
               title: "&lt;strong&gt;2026&lt;/strong&gt;",
