@@ -51,7 +51,18 @@ ninja.data = [{
               handler: () => {
                 window.location.href = "https://gram-blogposts.github.io/2024/";
               },
-            },{id: "post-when-the-k-nn-metric-breaks-a-geometric-phase-transition-in-local-density-estimation",
+            },{id: "post-blowup-and-blowdown-in-deep-learning-tracking-symmetry-breaking-with-algebraic-geometry",
+        
+          title: "Blowup and Blowdown in Deep Learning: Tracking Symmetry Breaking with Algebraic Geometry",
+        
+        description: "We propose algebraic-geometric indicators to track how deep networks simultaneously expand representation dimension (blowup) and break input symmetries (blowdown) during training. We prove an orbit-averaged orthogonality theorem valid for arbitrary nonlinear networks and verify experimentally that generalization gap scales as the square root of effective dimension over sample size with symmetry breaking following a greedy information-theoretic order.",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/2026/blog/2026/algebraic-geometry-deep-learning-dynamics/";
+          
+        },
+      },{id: "post-when-the-k-nn-metric-breaks-a-geometric-phase-transition-in-local-density-estimation",
         
           title: "When the k-NN Metric Breaks: A Geometric Phase Transition in Local Density Estimation...",
         
