@@ -84,6 +84,17 @@ ninja.data = [{
             window.location.href = "/2026/blog/2026/Symmetry-Increase-and-Equivariant-Feature-Selection/";
           
         },
+      },{id: "post-fewer-edges-faster-protein-graph-learning",
+        
+          title: "Fewer Edges, Faster Protein Graph Learning",
+        
+        description: "Protein graphs should not be constructed blindly based on spatial proximity: they must reflect directed, geometrically viable chemistry. We introduce Angle Rewiring, a biologically motivated edge criterion. Paired with a FiLM-based reformulation of IEConv that reduces memory usage, we explore the relationship between topological sparsity, computational efficiency, and geometric expressiveness across Enzyme Commission, Gene Ontology, and Fold3D benchmarks.",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/2026/blog/2026/fewer-edges/";
+          
+        },
       },{id: "post-to-augment-or-not-to-augment-diagnosing-distributional-symmetry-breaking",
         
           title: "To Augment or Not to Augment? Diagnosing Distributional Symmetry Breaking",
