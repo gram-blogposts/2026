@@ -62,6 +62,17 @@ ninja.data = [{
             window.location.href = "/2026/blog/2026/topology-tabular-anomalies/";
           
         },
+      },{id: "post-topos-topological-optimal-transport-partitioned-operator-solver",
+        
+          title: "TOPOS: Topological Optimal-transport Partitioned Operator Solver",
+        
+        description: "Neural operators have emerged as a powerful approach in scientific machine learning, enabling resolution-invariant mappings across infinite-dimensional function spaces for applications including weather forecasting and fluid dynamics. While successful on structured grids, these architectures often require retraining for new 3D geometries, limiting zero-shot generalization. We introduce TOPOS (Topological Optimal-transport Partitioned Operational System), a unified framework that standardizes irregular physical domains into topology-aware latent workbenches using instance-dependent optimal transport mappings and genus-based routing. For a given input mesh with density mu, TOPOS computes a diffeomorphic transport T to a uniform reference nu on a sphere (g=0) or torus (g=1) workbench, applies a spectral neural operator as a solver and decodes solutions back via inverse transport. This four-stage pipeline ensures topological integrity, discretization invariance and computational efficiency through manifold reduction. TOPOS learns geometry-agnostic representations, allowing zero-shot deployment across variable topologies.",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/2026/blog/2026/topos/";
+          
+        },
       },{id: "post-jacobi-fields-in-machine-learning",
         
           title: "Jacobi Fields in Machine Learning",
