@@ -6,6 +6,11 @@ date: 2026-04-07
 
 authors:
   - name: Vladislav Kalinichenko
+    affiliations:
+      name: Innopolis University
+  - name: Polina Korobeinikova
+    affiliations:
+      name: Innopolis University
 
 bibliography: 2026-01-22-graph-mamba.bib
 related_posts: false
