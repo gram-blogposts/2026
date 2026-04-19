@@ -151,7 +151,7 @@ ninja.data = [{
         
           title: "The Role of Directionality in Graph Neural Networks",
         
-        description: "We investigate how graph directionality may influence GNN performance across homophilic and heterophilic benchmarks, suggesting it could be an underexplored factor.",
+        description: "We investigate how graph directionality may influence GNN performance across homophilic and heterophilic benchmarks. By controlling for directionality, we observe performance changes that are not explained by homophily alone. Our results suggest that directionality may be an underexplored factor in graph learning.",
         section: "Posts",
         handler: () => {
           
