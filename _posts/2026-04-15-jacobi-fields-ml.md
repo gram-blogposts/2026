@@ -12,6 +12,8 @@ htmlwidgets: true
 
 authors:
   - name: Olga Zaghen
+    affiliations:
+      name: University of Amsterdam
 
 toc:
   - name: What are Jacobi Fields?

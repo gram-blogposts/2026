@@ -7,6 +7,8 @@ future: true
 htmlwidgets: true
 authors:
   - name: Tin Hadzi Veljkovic
+    affiliations:
+      name: University of Amsterdam
 bibliography: 2026-04-15-crystalite.bib
 toc:
   - name: Generative modeling of crystals
