@@ -11,7 +11,25 @@ mermaid:
   zoomable: true
 
 authors:
-  - name: Elyssa Hofgard
+  - name: "Hannah Lawrence*"
+    affiliations:
+      name: MIT
+  - name: "Elyssa Hofgard*"
+    url: https://ehofgard.github.io
+    affiliations:
+      name: MIT
+  - name: Vasco Portilheiro
+    affiliations:
+      name: University College London
+  - name: Yuxuan Chen
+    affiliations:
+      name: Northeastern University
+  - name: Tess Smidt
+    affiliations:
+      name: MIT
+  - name: Robin Walters
+    affiliations:
+      name: Northeastern University
 
 # must be the exact same name as your blogpost
 bibliography: 2026-04-14-ToAugmentOrNot.bib
@@ -95,6 +113,8 @@ _styles: >
   .helpful { color: #2a7a2a; font-weight: 500; }
   .harmful { color: #b00000; font-weight: 500; }
 ---
+
+<p><em>* Equal contribution. This post is based on our paper To Augment or Not to Augment? Diagnosing Distributional Symmetry Breaking (<a href="https://arxiv.org/abs/2510.01349">arXiv:2510.01349</a>), published at ICLR 2026.</em></p>
 
 ## Introduction
 

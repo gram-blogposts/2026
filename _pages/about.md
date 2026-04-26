@@ -49,11 +49,11 @@ This blogpost track is directly inspired by the amazing [ICLR blogpost track](ht
 </tr>
 <tr style="border-bottom: 1px solid #eee;">
 <td style="padding: 0.75rem 0.5rem;"><a href="{{ '/blog/2026/ToAugmentOrNot/' | relative_url }}">To Augment or Not to Augment?</a></td>
-<td style="padding: 0.75rem 0.5rem;">Elyssa Hofgard</td>
+<td style="padding: 0.75rem 0.5rem;">Hannah Lawrence, Elyssa Hofgard, Vasco Portilheiro, Yuxuan Chen, Tess Smidt, Robin Walters</td>
 </tr>
 <tr style="border-bottom: 1px solid #eee;">
 <td style="padding: 0.75rem 0.5rem;"><a href="{{ '/blog/2026/4-Dimensional-Objects-as-a-Tool-to-Study-Symmetry-Learning-in-Humans-and-Machines/' | relative_url }}">4-Dimensional Objects as a Tool to Study Symmetry Learning</a></td>
-<td style="padding: 0.75rem 0.5rem;">Raihan Gafur</td>
+<td style="padding: 0.75rem 0.5rem;">S M Raihan Gafur</td>
 </tr>
 <tr style="border-bottom: 1px solid #eee;">
 <td style="padding: 0.75rem 0.5rem;"><a href="{{ '/blog/2026/algebraic-geometry-deep-learning-dynamics/' | relative_url }}">Blowup and Blowdown in Deep Learning</a></td>

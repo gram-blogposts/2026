@@ -7,7 +7,9 @@ future: true
 htmlwidgets: true
 
 authors:
-  - name: Raihan Gafur
+  - name: S M Raihan Gafur
+    affiliations:
+      - name: Aalto University
 
 # must be the exact same name as your blogpost
 bibliography: 2026-04-13-4-Dimensional-Objects-as-a-Tool-to-Study-Symmetry-Learning-in-Humans-and-Machines.bib
@@ -246,8 +248,10 @@ We believe that 4D objects offer a unique experimental window not available in a
 
 The fourth dimension turns out to be not just a curiosity but an experiment.
 
+Tell us what you think at [raihan.gafur.49@gmail.com](mailto:raihan.gafur.49@gmail.com)
+
 ---
 
 ## Acknowledgement
 
-To be added upon acceptance.
+I would like to thank my supervisor and mentor, Stéphane Deny (Assistant Professor & PI, [BRAIN Lab](https://brain-aalto.github.io/index.html), Aalto University), for his exceptional support and guidance throughout the project. It has been a pleasure working with you.
